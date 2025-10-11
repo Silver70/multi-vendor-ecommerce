@@ -3,6 +3,7 @@ using System;
 using EcommerceApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EcommerceApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251011165919_fixingOrderItemstable")]
+    partial class fixingOrderItemstable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -95,32 +98,6 @@ namespace EcommerceApi.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("EcommerceApi.Models.InventoryLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Change")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("VariantId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VariantId");
-
-                    b.ToTable("InventoryLogs");
-                });
-
             modelBuilder.Entity("EcommerceApi.Models.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -179,39 +156,6 @@ namespace EcommerceApi.Migrations
                     b.ToTable("OrderItems");
                 });
 
-            modelBuilder.Entity("EcommerceApi.Models.Payment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Method")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("OrderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("TransactionId")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrderId");
-
-                    b.ToTable("Payments");
-                });
-
             modelBuilder.Entity("EcommerceApi.Models.Product", b =>
                 {
                     b.Property<Guid>("Id")
@@ -242,8 +186,6 @@ namespace EcommerceApi.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CategoryId");
 
                     b.HasIndex("VendorId");
 
@@ -311,36 +253,6 @@ namespace EcommerceApi.Migrations
                     b.ToTable("ProductVariants");
                 });
 
-            modelBuilder.Entity("EcommerceApi.Models.Review", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Comment")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Rating")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Reviews");
-                });
-
             modelBuilder.Entity("EcommerceApi.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -397,7 +309,7 @@ namespace EcommerceApi.Migrations
             modelBuilder.Entity("EcommerceApi.Models.Address", b =>
                 {
                     b.HasOne("EcommerceApi.Models.User", "User")
-                        .WithMany("Addresses")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -414,17 +326,6 @@ namespace EcommerceApi.Migrations
                     b.Navigation("Parent");
                 });
 
-            modelBuilder.Entity("EcommerceApi.Models.InventoryLog", b =>
-                {
-                    b.HasOne("EcommerceApi.Models.ProductVariant", "Variant")
-                        .WithMany("InventoryLogs")
-                        .HasForeignKey("VariantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Variant");
-                });
-
             modelBuilder.Entity("EcommerceApi.Models.Order", b =>
                 {
                     b.HasOne("EcommerceApi.Models.Address", "Address")
@@ -434,7 +335,7 @@ namespace EcommerceApi.Migrations
                         .IsRequired();
 
                     b.HasOne("EcommerceApi.Models.User", "User")
-                        .WithMany("Orders")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -447,13 +348,13 @@ namespace EcommerceApi.Migrations
             modelBuilder.Entity("EcommerceApi.Models.OrderItem", b =>
                 {
                     b.HasOne("EcommerceApi.Models.Order", "Order")
-                        .WithMany("Items")
+                        .WithMany()
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("EcommerceApi.Models.ProductVariant", "Variant")
-                        .WithMany("OrderItems")
+                        .WithMany()
                         .HasForeignKey("VariantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -463,30 +364,11 @@ namespace EcommerceApi.Migrations
                     b.Navigation("Variant");
                 });
 
-            modelBuilder.Entity("EcommerceApi.Models.Payment", b =>
-                {
-                    b.HasOne("EcommerceApi.Models.Order", "Order")
-                        .WithMany("Payments")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Order");
-                });
-
             modelBuilder.Entity("EcommerceApi.Models.Product", b =>
                 {
-                    b.HasOne("EcommerceApi.Models.Category", "Category")
-                        .WithMany("Products")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("EcommerceApi.Models.Vendor", "Vendor")
-                        .WithMany("Products")
+                        .WithMany()
                         .HasForeignKey("VendorId");
-
-                    b.Navigation("Category");
 
                     b.Navigation("Vendor");
                 });
@@ -494,13 +376,13 @@ namespace EcommerceApi.Migrations
             modelBuilder.Entity("EcommerceApi.Models.ProductImage", b =>
                 {
                     b.HasOne("EcommerceApi.Models.Product", "Product")
-                        .WithMany("Images")
+                        .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("EcommerceApi.Models.ProductVariant", "Variant")
-                        .WithMany("Images")
+                        .WithMany()
                         .HasForeignKey("VariantId");
 
                     b.Navigation("Product");
@@ -511,77 +393,17 @@ namespace EcommerceApi.Migrations
             modelBuilder.Entity("EcommerceApi.Models.ProductVariant", b =>
                 {
                     b.HasOne("EcommerceApi.Models.Product", "Product")
-                        .WithMany("Variants")
+                        .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Product");
-                });
-
-            modelBuilder.Entity("EcommerceApi.Models.Review", b =>
-                {
-                    b.HasOne("EcommerceApi.Models.Product", "Product")
-                        .WithMany("Reviews")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("EcommerceApi.Models.User", "User")
-                        .WithMany("Reviews")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("EcommerceApi.Models.Category", b =>
                 {
-                    b.Navigation("Products");
-
                     b.Navigation("Subcategories");
-                });
-
-            modelBuilder.Entity("EcommerceApi.Models.Order", b =>
-                {
-                    b.Navigation("Items");
-
-                    b.Navigation("Payments");
-                });
-
-            modelBuilder.Entity("EcommerceApi.Models.Product", b =>
-                {
-                    b.Navigation("Images");
-
-                    b.Navigation("Reviews");
-
-                    b.Navigation("Variants");
-                });
-
-            modelBuilder.Entity("EcommerceApi.Models.ProductVariant", b =>
-                {
-                    b.Navigation("Images");
-
-                    b.Navigation("InventoryLogs");
-
-                    b.Navigation("OrderItems");
-                });
-
-            modelBuilder.Entity("EcommerceApi.Models.User", b =>
-                {
-                    b.Navigation("Addresses");
-
-                    b.Navigation("Orders");
-
-                    b.Navigation("Reviews");
-                });
-
-            modelBuilder.Entity("EcommerceApi.Models.Vendor", b =>
-                {
-                    b.Navigation("Products");
                 });
 #pragma warning restore 612, 618
         }

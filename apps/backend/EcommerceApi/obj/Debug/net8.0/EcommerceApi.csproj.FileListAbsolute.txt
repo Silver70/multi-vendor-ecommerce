@@ -276,3 +276,4 @@
 /home/samee/projects/multi-vendor-ecommerce-app/apps/backend/EcommerceApi/obj/Debug/net8.0/EcommerceApi.pdb
 /home/samee/projects/multi-vendor-ecommerce-app/apps/backend/EcommerceApi/obj/Debug/net8.0/EcommerceApi.genruntimeconfig.cache
 /home/samee/projects/multi-vendor-ecommerce-app/apps/backend/EcommerceApi/obj/Debug/net8.0/ref/EcommerceApi.dll
+/home/samee/projects/multi-vendor-ecommerce-app/apps/backend/EcommerceApi/obj/Debug/net8.0/EcommerceApi.sourcelink.json
