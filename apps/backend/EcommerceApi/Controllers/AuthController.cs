@@ -7,7 +7,7 @@ using System.Security.Claims;
 using System.Text;
 using EcommerceApi.Data;
 using EcommerceApi.Models;
-using BCrypt.Net;
+using Microsoft.AspNetCore.Authorization;
 
 namespace EcommerceApi.Controllers
 {
@@ -49,7 +49,8 @@ namespace EcommerceApi.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddHours(12)
             });
 
             return Ok(new { message = "Logged in" });
@@ -67,7 +68,8 @@ namespace EcommerceApi.Controllers
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email)
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.Name)
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
@@ -82,5 +84,25 @@ namespace EcommerceApi.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> Me()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            return Unauthorized();
+
+        var user = await _context.Users.FindAsync(Guid.Parse(userId));
+        if (user == null)
+            return Unauthorized();
+
+        return Ok(new
+        {
+            user.Id,
+            user.Name,
+            user.Email
+        });
+    }
     }
 }
