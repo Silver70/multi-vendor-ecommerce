@@ -25,24 +25,35 @@ namespace EcommerceApi.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] User user)
+        public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == user.Email))
-                return BadRequest("User already exists");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
+
+            if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
+                return BadRequest(new { message = "User already exists" });
+
+            var user = new User
+            {
+                Name = registerDto.Name,
+                Email = registerDto.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password),
+                Role = "customer"
+            };
+
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok("User registered");
+            return Ok(new { message = "User registered successfully" });
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] User loginUser)
+        public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginUser.Email);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(loginUser.PasswordHash, user.PasswordHash))
-                return Unauthorized("Invalid credentials");
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+            if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
+                return Unauthorized(new { message = "Invalid credentials" });
 
             var token = GenerateJwtToken(user);
             Response.Cookies.Append("jwt", token, new CookieOptions
@@ -53,7 +64,7 @@ namespace EcommerceApi.Controllers
                 Expires = DateTime.UtcNow.AddHours(12)
             });
 
-            return Ok(new { message = "Logged in" });
+            return Ok(new { message = "Logged in successfully" });
         }
 
         [HttpPost("logout")]
