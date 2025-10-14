@@ -21,8 +21,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Get Clerk JWT token
-      const token = await getToken();
+      // Get Clerk JWT token with custom template
+      // Replace 'custom' with your JWT template name from Clerk Dashboard
+      const token = await getToken({ template: "neon" });
       if (!token) {
         setUser(null);
         setLoading(false);
@@ -41,7 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
       } else {
         // If user doesn't exist in backend, they might need to be synced via webhook
-        console.warn("User not found in backend database. Webhook sync may be pending.");
+        console.warn(
+          "User not found in backend database. Webhook sync may be pending."
+        );
         setUser(null);
       }
     } catch (error) {
@@ -70,9 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     // @ts-ignore
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
   );
 }
 

@@ -17,10 +17,7 @@ namespace EcommerceApi.Models
 
         [Required, EmailAddress]
         public string Email { get; set; } = string.Empty;
-
-        // PasswordHash is no longer needed with Clerk, but keeping for migration compatibility
-        // Remove this field after all users are migrated to Clerk
-        public string? PasswordHash { get; set; }
+        
 
         [Required]
         public string Role { get; set; } = "customer"; // "customer", "admin", "vendor"

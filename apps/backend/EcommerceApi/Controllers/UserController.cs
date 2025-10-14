@@ -25,6 +25,14 @@ namespace EcommerceApi.Controllers
         {
             try
             {
+                // DEBUG: Log all claims to see what we're getting
+                _logger.LogInformation("=== All JWT Claims ===");
+                foreach (var claim in User.Claims)
+                {
+                    _logger.LogInformation("Claim Type: {Type}, Value: {Value}", claim.Type, claim.Value);
+                }
+                _logger.LogInformation("======================");
+
                 // Get Clerk ID from JWT claims
                 var clerkId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
 
@@ -34,7 +42,7 @@ namespace EcommerceApi.Controllers
                     return Unauthorized(new { message = "Invalid token" });
                 }
 
-                _logger.LogInformation($"Looking up user with ClerkId: {clerkId}");
+                _logger.LogInformation("Looking up user with ClerkId: {ClerkId}", clerkId);
 
                 // Find user in database by Clerk ID
                 var user = await _context.Users

@@ -3,7 +3,6 @@ import { requireAuth } from "~/middleware/auth";
 import { useAuth } from "~/context/AuthContext";
 import { useClerk } from "@clerk/tanstack-react-start";
 import { Button } from "~/components/ui/button";
-import { DebugSyncUser } from "~/components/DebugSyncUser";
 import { useEffect } from "react";
 
 export const Route = createFileRoute("/dashboard/overview")({
@@ -36,9 +35,6 @@ function RouteComponent() {
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto space-y-4">
-        {/* Debug component for manual sync - only in development */}
-        {import.meta.env.DEV && <DebugSyncUser />}
-
         <div className="bg-card border rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold">Dashboard Overview</h1>
@@ -101,7 +97,7 @@ function RouteComponent() {
               </p>
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
                 You're logged in with Clerk, but your user data hasn't been synced to the database yet.
-                {import.meta.env.DEV && " Use the sync button above to manually sync your user."}
+                Please wait a moment for the webhook to sync your account.
               </p>
             </div>
           )}

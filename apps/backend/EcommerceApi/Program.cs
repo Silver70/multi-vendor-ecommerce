@@ -39,8 +39,10 @@ builder.Services.AddAuthentication(options =>
     {
         OnTokenValidated = context =>
         {
-            // You can add custom claims validation here if needed
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
             var clerkId = context.Principal?.FindFirst("sub")?.Value;
+            logger.LogInformation("[AUTH] Token validated successfully for ClerkId: {ClerkId}", clerkId);
+
             if (string.IsNullOrEmpty(clerkId))
             {
                 context.Fail("Missing sub claim");
@@ -49,7 +51,16 @@ builder.Services.AddAuthentication(options =>
         },
         OnAuthenticationFailed = context =>
         {
-            Console.WriteLine($"[AUTH] Token validation failed: {context.Exception.Message}");
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError("[AUTH] Token validation failed: {Message}", context.Exception.Message);
+            logger.LogError("[AUTH] Exception: {Exception}", context.Exception.ToString());
+            return Task.CompletedTask;
+        },
+        OnChallenge = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning("[AUTH] Challenge triggered. Error: {Error}, ErrorDescription: {ErrorDescription}",
+                context.Error, context.ErrorDescription);
             return Task.CompletedTask;
         }
     };
