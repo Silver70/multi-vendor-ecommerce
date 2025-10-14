@@ -4,6 +4,7 @@ import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { useSignIn } from "@clerk/tanstack-react-start";
 import { useAuth } from "~/context/AuthContext";
 
 export function LoginForm({
@@ -14,8 +15,9 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  // @ts-ignore
-  const { login } = useAuth();
+  const { signIn, setActive } = useSignIn();
+  //@ts-ignore
+  const { fetchUser } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,11 +25,35 @@ export function LoginForm({
     setError("");
     setIsLoading(true);
 
+    if (!signIn) {
+      setError("Sign in not initialized");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      await login(email, password);
-      navigate({ to: "/" });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      // Sign in with Clerk
+      const result = await signIn.create({
+        identifier: email,
+        password,
+      });
+
+      if (result.status === "complete") {
+        // Set the active session
+        await setActive({ session: result.createdSessionId });
+
+        // Fetch user data from backend
+        await fetchUser();
+
+        // Navigate to home
+        navigate({ to: "/" });
+      } else {
+        // Handle other statuses (MFA, etc.)
+        setError("Additional authentication required");
+      }
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(err.errors?.[0]?.message || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }

@@ -14,6 +14,7 @@ import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary";
 import { NotFound } from "~/components/NotFound";
 import appCss from "~/styles/app.css?url";
 import { seo } from "~/utils/seo";
+import { ClerkProvider } from "@clerk/tanstack-react-start";
 import { AuthProvider } from "~/context/AuthContext";
 
 export const Route = createRootRouteWithContext<{
@@ -77,17 +78,25 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+  if (!clerkPublishableKey) {
+    throw new Error("Missing Clerk Publishable Key. Please set VITE_CLERK_PUBLISHABLE_KEY in your .env file");
+  }
+
   return (
     <html>
       <head>
         <HeadContent />
       </head>
       <body>
-        <AuthProvider>
-          {children}
-          <TanStackRouterDevtools position="bottom-right" />
-          <ReactQueryDevtools buttonPosition="bottom-left" />
-        </AuthProvider>
+        <ClerkProvider publishableKey={clerkPublishableKey}>
+          <AuthProvider>
+            {children}
+            <TanStackRouterDevtools position="bottom-right" />
+            <ReactQueryDevtools buttonPosition="bottom-left" />
+          </AuthProvider>
+        </ClerkProvider>
         <Scripts />
       </body>
     </html>

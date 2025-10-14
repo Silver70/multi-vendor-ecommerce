@@ -2,17 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using EcommerceApi.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Read JWT settings from configuration
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
-
-
 // Add services to the container.
-// Configure JWT authentication
+// Configure Clerk JWT authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -20,28 +14,44 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    // Read JWT from HttpOnly cookie named "jwt"
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
-        {
-            if (context.Request.Cookies.ContainsKey("jwt"))
-            {
-                context.Token = context.Request.Cookies["jwt"];
-            }
-            return Task.CompletedTask;
-        }
-    };
+    var clerkConfig = builder.Configuration.GetSection("Clerk");
+    var frontendApi = clerkConfig["FrontendApi"] ?? throw new Exception("Clerk:FrontendApi configuration is required");
 
+    // Extract instance name from frontend API (format: clerk.{instance}.{domain})
+    // For Clerk, the issuer will be something like: https://clerk.{instance}.lcl.dev or https://clerk.{instance}.com
+    var issuer = frontendApi.StartsWith("http") ? frontendApi : $"https://{frontendApi}";
+
+    options.Authority = issuer;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateIssuerSigningKey = true,
+        ValidateAudience = false, // Clerk doesn't use audience validation
         ValidateLifetime = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(key)
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = issuer,
+        NameClaimType = "sub", // Clerk uses "sub" for user ID
+    };
+
+    // Enable automatic retrieval of signing keys from Clerk's JWKS endpoint
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = context =>
+        {
+            // You can add custom claims validation here if needed
+            var clerkId = context.Principal?.FindFirst("sub")?.Value;
+            if (string.IsNullOrEmpty(clerkId))
+            {
+                context.Fail("Missing sub claim");
+            }
+            return Task.CompletedTask;
+        },
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine($"[AUTH] Token validation failed: {context.Exception.Message}");
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -75,7 +85,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Only use HTTPS redirection in production
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

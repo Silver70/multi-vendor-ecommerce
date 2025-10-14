@@ -4,6 +4,7 @@ import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { useSignUp } from "@clerk/tanstack-react-start";
 import { useAuth } from "~/context/AuthContext";
 
 export function RegisterForm({
@@ -13,42 +14,141 @@ export function RegisterForm({
   //@ts-ignore
   const { fetchUser } = useAuth();
   const [form, setForm] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const baseUrl = "http://localhost:5176";
+  const [verifying, setVerifying] = useState(false);
+  const [code, setCode] = useState("");
+  const { signUp, setActive } = useSignUp();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
+
+    if (!signUp) {
+      setError("Sign up not initialized");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const res = await fetch(`${baseUrl}/api/Auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(form),
+      // Split name into first and last name
+      const nameParts = form.firstName.trim().split(" ");
+      const firstName = nameParts[0] || form.firstName;
+      const lastName = nameParts.slice(1).join(" ") || form.lastName || "";
+
+      // Create sign up with Clerk
+      await signUp.create({
+        emailAddress: form.email,
+        password: form.password,
+        firstName: firstName,
+        lastName: lastName,
       });
 
-      const data = await res.json();
+      // Send verification email
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
 
-      if (!res.ok) {
-        throw new Error(data.message || "Registration failed");
-      }
-
-      // Registration successful - you may want to redirect to login or auto-login
-      navigate({ to: "/auth/login" });
-      await fetchUser();
+      // Show verification UI
+      setVerifying(true);
     } catch (err: any) {
-      setError(err.message);
+      console.error("Registration error:", err);
+      setError(err.errors?.[0]?.message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+
+    if (!signUp) {
+      setError("Sign up not initialized");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Verify email with code
+      const result = await signUp.attemptEmailAddressVerification({
+        code,
+      });
+
+      if (result.status === "complete") {
+        // Set the active session
+        await setActive({ session: result.createdSessionId });
+
+        // Fetch user data from backend (webhook should have created the user)
+        await fetchUser();
+
+        // Navigate to home
+        navigate({ to: "/" });
+      } else {
+        setError("Verification incomplete. Please try again.");
+      }
+    } catch (err: any) {
+      console.error("Verification error:", err);
+      setError(err.errors?.[0]?.message || "Verification failed. Please check your code.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // If verifying, show verification form
+  if (verifying) {
+    return (
+      <form
+        className={cn("flex flex-col gap-6", className)}
+        {...props}
+        onSubmit={handleVerify}
+      >
+        <div className="flex flex-col items-center gap-2 text-center">
+          <h1 className="text-2xl font-bold">Verify your email</h1>
+          <p className="text-balance text-sm text-muted-foreground">
+            Enter the verification code sent to {form.email}
+          </p>
+        </div>
+        {error && (
+          <div className="bg-destructive/15 text-destructive border border-destructive/50 rounded-md p-3 text-sm">
+            {error}
+          </div>
+        )}
+        <div className="grid gap-6">
+          <div className="grid gap-2">
+            <Label htmlFor="code">Verification Code</Label>
+            <Input
+              id="code"
+              type="text"
+              placeholder="Enter 6-digit code"
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Verifying..." : "Verify Email"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => setVerifying(false)}
+            disabled={isLoading}
+          >
+            Back
+          </Button>
+        </div>
+      </form>
+    );
+  }
 
   return (
     <form
@@ -69,14 +169,14 @@ export function RegisterForm({
       )}
       <div className="grid gap-6">
         <div className="grid gap-2">
-          <Label htmlFor="name">Name</Label>
+          <Label htmlFor="firstName">Name</Label>
           <Input
-            id="name"
+            id="firstName"
             type="text"
             placeholder="John Doe"
             required
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            value={form.firstName}
+            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
             disabled={isLoading}
           />
         </div>

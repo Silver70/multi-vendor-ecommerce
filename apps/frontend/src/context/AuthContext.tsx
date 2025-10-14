@@ -1,51 +1,76 @@
 // src/context/AuthContext.tsx
 import { createContext, useContext, useState, useEffect } from "react";
+import { useAuth as useClerkAuth, useUser } from "@clerk/tanstack-react-start";
 
 const AuthContext = createContext(null);
 
-const BaseUrl = "http://localhost:5176";
+const BaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5176";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { isSignedIn, isLoaded: clerkLoaded, getToken } = useClerkAuth();
+  const { user: clerkUser } = useUser();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch user data from your backend using Clerk token
   const fetchUser = async () => {
     try {
-      const res = await fetch(`${BaseUrl}/api/Auth/me`, {
-        credentials: "include",
+      if (!isSignedIn || !clerkLoaded) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      // Get Clerk JWT token
+      const token = await getToken();
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch user from your backend
+      const res = await fetch(`${BaseUrl}/api/User/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      if (res.ok) setUser(await res.json());
-      else setUser(null);
+
+      if (res.ok) {
+        const userData = await res.json();
+        setUser(userData);
+      } else {
+        // If user doesn't exist in backend, they might need to be synced via webhook
+        console.warn("User not found in backend database. Webhook sync may be pending.");
+        setUser(null);
+      }
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async (email: string, password: string) => {
-    await fetch(`${BaseUrl}/api/Auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ email, password }),
-    });
-    await fetchUser();
-  };
-
-  const logout = async () => {
-    await fetch(`${BaseUrl}/api/Auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    setUser(null);
-  };
-
+  // Fetch user data whenever Clerk auth state changes
   useEffect(() => {
-    fetchUser();
-  }, []);
+    if (clerkLoaded) {
+      fetchUser();
+    }
+  }, [isSignedIn, clerkLoaded, clerkUser?.id]);
+
+  const value = {
+    user, // Your backend user data
+    clerkUser, // Clerk user object
+    isSignedIn,
+    loading: !clerkLoaded || loading,
+    fetchUser,
+    getToken, // Function to get Clerk JWT token
+  };
 
   return (
     // @ts-ignore
-    <AuthContext.Provider value={{ user, loading, login, logout, fetchUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

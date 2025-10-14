@@ -1,60 +1,25 @@
 import { redirect } from "@tanstack/react-router";
 
 /**
- * Authentication middleware for protected routes
- *
- * This middleware checks if the user is authenticated by verifying
- * the JWT cookie with the backend /api/auth/me endpoint.
- *
- * Usage in route files:
- * ```tsx
- * export const Route = createFileRoute('/protected-route')({
- *   beforeLoad: requireAuth,
- *   component: ProtectedComponent,
- * })
- * ```
+ * Route protection with Clerk
+ * Note: For Clerk, we rely on the component-level auth state
+ * The middleware just passes through and lets the component check auth
+ * Actual protection happens in the component via the AuthContext
  */
 export async function requireAuth({
   location,
 }: {
   location: { href: string };
 }) {
-  try {
-    const response = await fetch("/api/auth/me", {
-      credentials: "include", // Important: include the JWT cookie
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  // For client-side routing with Clerk, we don't do checks here
+  // The component will handle redirects based on Clerk's auth state
+  // This is because Clerk manages sessions via HTTP-only cookies
+  // and we can't reliably check them in route middleware
 
-    if (!response.ok) {
-      // User is not authenticated, redirect to login
-      throw redirect({
-        to: "/login",
-        search: {
-          // Store the intended destination to redirect after login
-          redirect: location.href,
-        },
-      });
-    }
+  console.log(`[MIDDLEWARE] requireAuth called for: ${location.href}`);
 
-    // Return user data to be available in the route context
-    const user = await response.json();
-    return { user };
-  } catch (error) {
-    // If fetch fails or redirect is thrown, handle appropriately
-    if (error && typeof error === "object" && "to" in error) {
-      throw error; // Re-throw redirect
-    }
-
-    // For other errors (network issues, etc.), redirect to login
-    throw redirect({
-      to: "/login",
-      search: {
-        redirect: location.href,
-      },
-    });
-  }
+  // Return empty object - actual auth check happens in the component
+  return {};
 }
 
 /**
@@ -70,35 +35,15 @@ export async function requireAuth({
  * ```
  */
 export async function requireGuest() {
-  try {
-    const response = await fetch("/api/auth/me", {
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (response.ok) {
-      // User is authenticated, redirect to home
-      throw redirect({
-        to: "/",
-      });
-    }
-
-    return {};
-  } catch (error) {
-    // If fetch fails or redirect is thrown, handle appropriately
-    if (error && typeof error === "object" && "to" in error) {
-      throw error; // Re-throw redirect
-    }
-
-    // For other errors, allow access (assume guest)
-    return {};
-  }
+  // With Clerk, the component will handle redirects
+  // based on isSignedIn state from Clerk
+  return {};
 }
 
 /**
  * Role-based authorization middleware factory
+ * Note: With Clerk, role checks should be done in the component
+ * using the user data from AuthContext
  *
  * Usage in route files:
  * ```tsx
@@ -110,56 +55,15 @@ export async function requireGuest() {
  */
 export function requireRole(allowedRoles: string[]) {
   return async ({ location }: { location: { href: string } }) => {
-    try {
-      const response = await fetch("/api/auth/me", {
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        // User is not authenticated
-        throw redirect({
-          to: "/login",
-          search: {
-            redirect: location.href,
-          },
-        });
-      }
-
-      const user = await response.json();
-
-      // Check if user has required role
-      // Note: Adjust this based on your actual user object structure
-      // You might need to update the backend to include role in the response
-      if (user.role && allowedRoles.includes(user.role)) {
-        return { user };
-      }
-
-      // User doesn't have required role, redirect to unauthorized page
-      throw redirect({
-        to: "/unauthorized",
-      });
-    } catch (error) {
-      if (error && typeof error === "object" && "to" in error) {
-        throw error; // Re-throw redirect
-      }
-
-      // For other errors, redirect to login
-      throw redirect({
-        to: "/login",
-        search: {
-          redirect: location.href,
-        },
-      });
-    }
+    // Role checks happen in the component using AuthContext
+    // This middleware just passes through
+    return { allowedRoles };
   };
 }
 
 /**
  * Optional authentication middleware
- * Attempts to fetch user data but doesn't redirect if not authenticated
+ * Doesn't require authentication but provides user data if available
  * Useful for pages that have different content for authenticated vs guest users
  *
  * Usage in route files:
@@ -171,22 +75,7 @@ export function requireRole(allowedRoles: string[]) {
  * ```
  */
 export async function optionalAuth() {
-  try {
-    const response = await fetch("/api/auth/me", {
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (response.ok) {
-      const user = await response.json();
-      return { user };
-    }
-
-    return { user: null };
-  } catch (error) {
-    // If fetch fails, return null user
-    return { user: null };
-  }
+  // With Clerk, components can access auth state via AuthContext
+  // This middleware just passes through
+  return {};
 }

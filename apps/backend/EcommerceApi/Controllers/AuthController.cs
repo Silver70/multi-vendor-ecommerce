@@ -51,20 +51,30 @@ namespace EcommerceApi.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
+            Console.WriteLine($"[AUTH] Login attempt for email: {loginDto.Email}");
+
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
             if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
+            {
+                Console.WriteLine($"[AUTH] Login failed for email: {loginDto.Email}");
                 return Unauthorized(new { message = "Invalid credentials" });
+            }
 
             var token = GenerateJwtToken(user);
-            Response.Cookies.Append("jwt", token, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddHours(12)
-            });
+            Console.WriteLine($"[AUTH] Generated JWT token for user: {user.Email}");
+            Console.WriteLine($"[AUTH] Token: {token.Substring(0, Math.Min(50, token.Length))}...");
 
-            return Ok(new { message = "Logged in successfully" });
+            // Return token in response body instead of cookie for cross-origin compatibility
+            return Ok(new {
+                message = "Logged in successfully",
+                token = token,
+                user = new {
+                    user.Id,
+                    user.Name,
+                    user.Email,
+                    user.Role
+                }
+            });
         }
 
         [HttpPost("logout")]
@@ -100,19 +110,34 @@ namespace EcommerceApi.Controllers
     [HttpGet("me")]
     public async Task<IActionResult> Me()
     {
+        // Debug logging
+        Console.WriteLine($"[AUTH] /me endpoint hit");
+        Console.WriteLine($"[AUTH] Has jwt cookie: {Request.Cookies.ContainsKey("jwt")}");
+        Console.WriteLine($"[AUTH] User.Identity.IsAuthenticated: {User.Identity?.IsAuthenticated}");
+
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Console.WriteLine($"[AUTH] UserId from claims: {userId}");
+
         if (userId == null)
-            return Unauthorized();
+        {
+            Console.WriteLine("[AUTH] No userId found in claims - returning Unauthorized");
+            return Unauthorized(new { message = "Not authenticated" });
+        }
 
         var user = await _context.Users.FindAsync(Guid.Parse(userId));
         if (user == null)
-            return Unauthorized();
+        {
+            Console.WriteLine("[AUTH] User not found in database - returning Unauthorized");
+            return Unauthorized(new { message = "User not found" });
+        }
 
+        Console.WriteLine($"[AUTH] Successfully authenticated user: {user.Email}");
         return Ok(new
         {
             user.Id,
             user.Name,
-            user.Email
+            user.Email,
+            user.Role
         });
     }
     }
