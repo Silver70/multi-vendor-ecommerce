@@ -25,24 +25,13 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // DEBUG: Log all claims to see what we're getting
-                _logger.LogInformation("=== All JWT Claims ===");
-                foreach (var claim in User.Claims)
-                {
-                    _logger.LogInformation("Claim Type: {Type}, Value: {Value}", claim.Type, claim.Value);
-                }
-                _logger.LogInformation("======================");
-
                 // Get Clerk ID from JWT claims
                 var clerkId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
 
                 if (string.IsNullOrEmpty(clerkId))
                 {
-                    _logger.LogWarning("No Clerk ID found in token claims");
                     return Unauthorized(new { message = "Invalid token" });
                 }
-
-                _logger.LogInformation("Looking up user with ClerkId: {ClerkId}", clerkId);
 
                 // Find user in database by Clerk ID
                 var user = await _context.Users
@@ -50,11 +39,8 @@ namespace EcommerceApi.Controllers
 
                 if (user == null)
                 {
-                    _logger.LogWarning($"User with ClerkId {clerkId} not found in database");
                     return NotFound(new { message = "User not found. Please ensure your account is properly synced." });
                 }
-
-                _logger.LogInformation($"Found user: {user.Email}");
 
                 return Ok(new
                 {

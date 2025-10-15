@@ -22,8 +22,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Get Clerk JWT token with custom template
-      // Replace 'custom' with your JWT template name from Clerk Dashboard
       const token = await getToken({ template: "neon" });
+
       if (!token) {
         setUser(null);
         setLoading(false);
