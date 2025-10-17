@@ -64,7 +64,7 @@ const data = {
     },
     {
       title: "Inventory",
-      url: "/dashboard/inventory",
+      url: "#",
       icon: Box,
       items: [
         {
