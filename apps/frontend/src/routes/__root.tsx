@@ -16,6 +16,7 @@ import appCss from "~/styles/app.css?url";
 import { seo } from "~/utils/seo";
 import { ClerkProvider } from "@clerk/tanstack-react-start";
 import { AuthProvider } from "~/context/AuthContext";
+import { ThemeProvider } from "~/components/theme-provider";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -85,18 +86,25 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <html>
+    <html suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body>
-        <ClerkProvider publishableKey={clerkPublishableKey}>
-          <AuthProvider>
-            {children}
-            <TanStackRouterDevtools position="bottom-right" />
-            <ReactQueryDevtools buttonPosition="bottom-left" />
-          </AuthProvider>
-        </ClerkProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ClerkProvider publishableKey={clerkPublishableKey}>
+            <AuthProvider>
+              {children}
+              <TanStackRouterDevtools position="bottom-right" />
+              <ReactQueryDevtools buttonPosition="bottom-left" />
+            </AuthProvider>
+          </ClerkProvider>
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>

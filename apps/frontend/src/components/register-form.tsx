@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -58,7 +58,9 @@ export function RegisterForm({
       setVerifying(true);
     } catch (err: any) {
       console.error("Registration error:", err);
-      setError(err.errors?.[0]?.message || "Registration failed. Please try again.");
+      setError(
+        err.errors?.[0]?.message || "Registration failed. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -95,7 +97,10 @@ export function RegisterForm({
       }
     } catch (err: any) {
       console.error("Verification error:", err);
-      setError(err.errors?.[0]?.message || "Verification failed. Please check your code.");
+      setError(
+        err.errors?.[0]?.message ||
+          "Verification failed. Please check your code."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -231,9 +236,9 @@ export function RegisterForm({
       </div>
       <div className="text-center text-sm">
         Don&apos;t have an account?{" "}
-        <a href="#" className="underline underline-offset-4">
+        <Link to="/auth/login" className="underline underline-offset-4">
           Login
-        </a>
+        </Link>
       </div>
     </form>
   );

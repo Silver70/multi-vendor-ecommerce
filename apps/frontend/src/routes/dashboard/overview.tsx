@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { requireAuth } from "~/middleware/auth";
 import { useAuth } from "~/context/AuthContext";
 import { useClerk } from "@clerk/tanstack-react-start";
-import { Button } from "~/components/ui/button";
 import { useEffect } from "react";
 import { AppSidebar } from "~/components/app-sidebar";
 import {
@@ -28,8 +27,6 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import {
-  Moon,
-  Sun,
   TrendingUp,
   TrendingDown,
   DollarSign,
@@ -37,6 +34,7 @@ import {
   Users,
   Package,
 } from "lucide-react";
+import { ThemeToggle } from "~/components/theme-toggle";
 import {
   Bar,
   BarChart,
@@ -146,11 +144,7 @@ function RouteComponent() {
             </Breadcrumb>
           </div>
           <div className="flex items-center gap-2 px-4">
-            <Button variant="ghost" size="icon">
-              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
-            </Button>
+            <ThemeToggle />
             <Avatar className="h-8 w-8">
               <AvatarImage src="/avatars/shadcn.jpg" alt="User" />
               <AvatarFallback>CN</AvatarFallback>
@@ -225,16 +219,26 @@ function RouteComponent() {
                       <CartesianGrid
                         strokeDasharray="3 3"
                         className="stroke-muted"
+                        stroke="hsl(var(--border))"
                       />
-                      <XAxis dataKey="month" className="text-xs" />
-                      <YAxis className="text-xs" />
+                      <XAxis
+                        dataKey="month"
+                        className="text-xs"
+                        tick={{ fill: "hsl(var(--foreground))" }}
+                        stroke="hsl(var(--border))"
+                      />
+                      <YAxis
+                        className="text-xs"
+                        tick={{ fill: "hsl(var(--foreground))" }}
+                        stroke="hsl(var(--border))"
+                      />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Line
                         type="monotone"
                         dataKey="revenue"
-                        stroke="var(--color-chart-1)"
+                        stroke="hsl(var(--chart-1))"
                         strokeWidth={2}
-                        dot={{ fill: "var(--color-chart-1)" }}
+                        dot={{ fill: "hsl(var(--chart-1))" }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -265,6 +269,7 @@ function RouteComponent() {
                       <CartesianGrid
                         strokeDasharray="3 3"
                         className="stroke-muted"
+                        stroke="hsl(var(--border))"
                       />
                       <XAxis
                         dataKey="category"
@@ -272,12 +277,18 @@ function RouteComponent() {
                         angle={-45}
                         textAnchor="end"
                         height={80}
+                        tick={{ fill: "hsl(var(--foreground))" }}
+                        stroke="hsl(var(--border))"
                       />
-                      <YAxis className="text-xs" />
+                      <YAxis
+                        className="text-xs"
+                        tick={{ fill: "hsl(var(--foreground))" }}
+                        stroke="hsl(var(--border))"
+                      />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Bar
                         dataKey="sales"
-                        fill="var(--color-chart-2)"
+                        fill="hsl(var(--chart-2))"
                         radius={[4, 4, 0, 0]}
                       />
                     </BarChart>
