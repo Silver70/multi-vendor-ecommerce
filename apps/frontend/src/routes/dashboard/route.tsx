@@ -1,8 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Outlet } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useMatches } from "@tanstack/react-router";
+import { Outlet, Link } from "@tanstack/react-router";
 import { requireAuth } from "~/middleware/auth";
 import { useAuth } from "~/context/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { AppSidebar } from "~/components/app-sidebar";
 import {
   Breadcrumb,
@@ -26,10 +26,19 @@ export const Route = createFileRoute("/dashboard")({
   component: RouteComponent,
 });
 
+// Helper function to format route segment into readable label
+function formatSegment(segment: string): string {
+  return segment
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 function RouteComponent() {
   // @ts-ignore
   const { loading, isSignedIn } = useAuth();
   const navigate = useNavigate();
+  const matches = useMatches();
 
   // Redirect to login if not signed in
   useEffect(() => {
@@ -37,6 +46,48 @@ function RouteComponent() {
       navigate({ to: "/auth/login" });
     }
   }, [loading, isSignedIn, navigate]);
+
+  // Generate breadcrumbs from route matches
+  const breadcrumbs = useMemo(() => {
+    const crumbs: Array<{ label: string; path: string; isLast: boolean }> = [];
+
+    // Always add Dashboard as the first crumb
+    crumbs.push({
+      label: "Dashboard",
+      path: "/dashboard/overview",
+      isLast: false,
+    });
+
+    // Get the current pathname
+    const currentMatch = matches[matches.length - 1];
+    if (currentMatch && currentMatch.pathname !== "/dashboard") {
+      // Split the path and filter out empty strings and "dashboard"
+      const segments = currentMatch.pathname
+        .split("/")
+        .filter((segment) => segment && segment !== "dashboard");
+
+      // Build breadcrumbs from segments
+      segments.forEach((segment, index) => {
+        const isLast = index === segments.length - 1;
+        const path = `/dashboard/${segments.slice(0, index + 1).join("/")}`;
+
+        crumbs.push({
+          label: formatSegment(segment),
+          path,
+          isLast,
+        });
+      });
+    } else {
+      // If we're on the dashboard root, show Overview
+      crumbs.push({
+        label: "Overview",
+        path: "/dashboard/overview",
+        isLast: true,
+      });
+    }
+
+    return crumbs;
+  }, [matches]);
 
   return (
     <SidebarProvider>
@@ -51,13 +102,22 @@ function RouteComponent() {
             />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Overview</BreadcrumbPage>
-                </BreadcrumbItem>
+                {breadcrumbs.map((crumb, index) => (
+                  <div key={crumb.path} className="contents">
+                    <BreadcrumbItem className={index === 0 ? "hidden md:block" : ""}>
+                      {crumb.isLast ? (
+                        <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                      ) : (
+                        <BreadcrumbLink asChild>
+                          <Link to={crumb.path}>{crumb.label}</Link>
+                        </BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                    {!crumb.isLast && (
+                      <BreadcrumbSeparator className={index === 0 ? "hidden md:block" : ""} />
+                    )}
+                  </div>
+                ))}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
