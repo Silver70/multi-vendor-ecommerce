@@ -9,7 +9,8 @@ import {
   Map,
   PieChart,
   Settings2,
-  SquareTerminal,
+  Box,
+  Home,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -28,6 +29,7 @@ import {
   SidebarMenuButton,
 } from "~/components/ui/sidebar";
 import { useNavigate } from "@tanstack/react-router";
+import { Separator } from "@radix-ui/react-separator";
 
 // This is sample data.
 const data = {
@@ -55,89 +57,57 @@ const data = {
   ],
   navMain: [
     {
-      title: "Playground",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
+      title: "Home",
+      url: "/dashboard/overview",
+      icon: Home,
+      isActive: false,
+    },
+    {
+      title: "Inventory",
+      url: "/dashboard/inventory",
+      icon: Box,
       items: [
         {
-          title: "History",
-          url: "#",
+          title: "Products",
+          url: "/dashboard/inventory/products",
         },
         {
-          title: "Starred",
-          url: "#",
+          title: "Categories",
+          url: "/dashboard/inventory/categories",
         },
         {
-          title: "Settings",
-          url: "#",
+          title: "Brands",
+          url: "/dashboard/inventory/brands",
         },
       ],
     },
     {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
+      title: "Orders",
+      url: "/dashboard/orders",
       icon: BookOpen,
       items: [
         {
-          title: "Introduction",
-          url: "#",
+          title: "Orders",
+          url: "/dashboard/orders",
         },
         {
-          title: "Get Started",
-          url: "#",
+          title: "Deliveries",
+          url: "/dashboard/orders/deliveries",
         },
         {
-          title: "Tutorials",
-          url: "#",
+          title: "Returns",
+          url: "/dashboard/orders/returns",
         },
         {
-          title: "Changelog",
-          url: "#",
+          title: "Refunds",
+          url: "/dashboard/orders/refunds",
         },
       ],
     },
     {
-      title: "Settings",
-      url: "#",
+      title: "Analytics",
+      url: "/dashboard/analytics",
       icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
     },
   ],
   projects: [
