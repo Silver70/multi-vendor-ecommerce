@@ -46,14 +46,17 @@ export function LoginForm({
         await fetchUser();
 
         // Navigate to home
-        navigate({ to: "/" });
+        navigate({ to: "/dashboard/overview" });
       } else {
         // Handle other statuses (MFA, etc.)
         setError("Additional authentication required");
       }
     } catch (err: any) {
       console.error("Login error:", err);
-      setError(err.errors?.[0]?.message || "Login failed. Please check your credentials.");
+      setError(
+        err.errors?.[0]?.message ||
+          "Login failed. Please check your credentials."
+      );
     } finally {
       setIsLoading(false);
     }
