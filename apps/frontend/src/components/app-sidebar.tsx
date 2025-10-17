@@ -60,7 +60,12 @@ const data = {
       title: "Home",
       url: "/dashboard/overview",
       icon: Home,
-      isActive: false,
+      items: [
+        {
+          title: "Overview",
+          url: "/dashboard/overview",
+        },
+      ],
     },
     {
       title: "Inventory",
