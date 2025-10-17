@@ -3,13 +3,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import {
-  ArrowUpDown,
-  Filter,
-  MoreHorizontal,
-  Plus,
-  Search,
-} from "lucide-react";
+import { ArrowUpDown, Filter, MoreHorizontal, Plus, Search } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -202,14 +196,15 @@ function RouteComponent() {
     <div className="container mx-auto py-2">
       <div className="flex items-center justify-between gap-4 mb-6">
         {/* Search Bar */}
-        <div className="flex-1 max-w-sm">
+        <div className="flex-1 max-w-sm relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search products..."
             value={searchQuery}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setSearchQuery(e.target.value)
             }
-            className="w-full"
+            className="w-full pl-9"
           />
         </div>
 
