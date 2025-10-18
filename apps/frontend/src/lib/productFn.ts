@@ -35,7 +35,9 @@ export interface UpdateProductDto {
 // Get all products with pagination
 export const getProducts = createServerFn({ method: "GET" }).handler(
   async () => {
-    const response = await axios.get<PagedResult<Product>>(`${API_BASE_URL}/api/Products`);
+    const response = await axios.get<PagedResult<Product>>(
+      `${API_BASE_URL}/api/Products`
+    );
     return response.data;
   }
 );
@@ -49,7 +51,9 @@ export const getProductsQueryOptions = queryOptions({
 export const getProduct = createServerFn({ method: "GET" })
   .inputValidator((d: string) => d)
   .handler(async ({ data }) => {
-    const response = await axios.get<Product>(`${API_BASE_URL}/api/Products/${data}`);
+    const response = await axios.get<Product>(
+      `${API_BASE_URL}/api/Products/${data}`
+    );
     return response.data;
   });
 
@@ -64,7 +68,10 @@ export const getProductQueryOptions = (id: string) =>
 export const createProduct = createServerFn({ method: "POST" })
   .inputValidator((d: CreateProductDto) => d)
   .handler(async ({ data }) => {
-    const response = await axios.post<Product>(`${API_BASE_URL}/api/Products`, data);
+    const response = await axios.post<Product>(
+      `${API_BASE_URL}/api/Products`,
+      data
+    );
     return response.data;
   });
 

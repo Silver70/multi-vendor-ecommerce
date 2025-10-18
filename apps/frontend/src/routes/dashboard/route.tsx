@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate, useMatches } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useMatches,
+} from "@tanstack/react-router";
 import { Outlet, Link } from "@tanstack/react-router";
 import { requireAuth } from "~/middleware/auth";
 import { useAuth } from "~/context/AuthContext";
@@ -104,7 +108,9 @@ function RouteComponent() {
               <BreadcrumbList>
                 {breadcrumbs.map((crumb, index) => (
                   <div key={crumb.path} className="contents">
-                    <BreadcrumbItem className={index === 0 ? "hidden md:block" : ""}>
+                    <BreadcrumbItem
+                      className={index === 0 ? "hidden md:block" : ""}
+                    >
                       {crumb.isLast ? (
                         <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
                       ) : (
@@ -114,7 +120,9 @@ function RouteComponent() {
                       )}
                     </BreadcrumbItem>
                     {!crumb.isLast && (
-                      <BreadcrumbSeparator className={index === 0 ? "hidden md:block" : ""} />
+                      <BreadcrumbSeparator
+                        className={index === 0 ? "hidden md:block" : ""}
+                      />
                     )}
                   </div>
                 ))}

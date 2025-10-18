@@ -15,6 +15,7 @@ import { Route as DashboardOverviewRouteImport } from './routes/dashboard/overvi
 import { Route as AuthUnauthorizedRouteImport } from './routes/auth/unauthorized'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as DashboardOrdersIndexRouteImport } from './routes/dashboard/orders/index'
 import { Route as DashboardInventoryProductsRouteImport } from './routes/dashboard/inventory/products'
 
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
@@ -47,6 +48,11 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardOrdersIndexRoute = DashboardOrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const DashboardInventoryProductsRoute =
   DashboardInventoryProductsRouteImport.update({
     id: '/inventory/products',
@@ -62,6 +68,7 @@ export interface FileRoutesByFullPath {
   '/auth/unauthorized': typeof AuthUnauthorizedRoute
   '/dashboard/overview': typeof DashboardOverviewRoute
   '/dashboard/inventory/products': typeof DashboardInventoryProductsRoute
+  '/dashboard/orders': typeof DashboardOrdersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -71,6 +78,7 @@ export interface FileRoutesByTo {
   '/auth/unauthorized': typeof AuthUnauthorizedRoute
   '/dashboard/overview': typeof DashboardOverviewRoute
   '/dashboard/inventory/products': typeof DashboardInventoryProductsRoute
+  '/dashboard/orders': typeof DashboardOrdersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -81,6 +89,7 @@ export interface FileRoutesById {
   '/auth/unauthorized': typeof AuthUnauthorizedRoute
   '/dashboard/overview': typeof DashboardOverviewRoute
   '/dashboard/inventory/products': typeof DashboardInventoryProductsRoute
+  '/dashboard/orders/': typeof DashboardOrdersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -92,6 +101,7 @@ export interface FileRouteTypes {
     | '/auth/unauthorized'
     | '/dashboard/overview'
     | '/dashboard/inventory/products'
+    | '/dashboard/orders'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -101,6 +111,7 @@ export interface FileRouteTypes {
     | '/auth/unauthorized'
     | '/dashboard/overview'
     | '/dashboard/inventory/products'
+    | '/dashboard/orders'
   id:
     | '__root__'
     | '/'
@@ -110,6 +121,7 @@ export interface FileRouteTypes {
     | '/auth/unauthorized'
     | '/dashboard/overview'
     | '/dashboard/inventory/products'
+    | '/dashboard/orders/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -164,6 +176,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/orders/': {
+      id: '/dashboard/orders/'
+      path: '/orders'
+      fullPath: '/dashboard/orders'
+      preLoaderRoute: typeof DashboardOrdersIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/dashboard/inventory/products': {
       id: '/dashboard/inventory/products'
       path: '/inventory/products'
@@ -177,11 +196,13 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteRouteChildren {
   DashboardOverviewRoute: typeof DashboardOverviewRoute
   DashboardInventoryProductsRoute: typeof DashboardInventoryProductsRoute
+  DashboardOrdersIndexRoute: typeof DashboardOrdersIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardOverviewRoute: DashboardOverviewRoute,
   DashboardInventoryProductsRoute: DashboardInventoryProductsRoute,
+  DashboardOrdersIndexRoute: DashboardOrdersIndexRoute,
 }
 
 const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
