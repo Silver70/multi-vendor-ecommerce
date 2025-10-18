@@ -24,7 +24,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { DataTable } from "~/components/data-table";
 import { Product } from "~/types/product";
-import { getProductsQueryOptions } from "~/lib/server";
+import { getProductsQueryOptions } from "~/lib/productFn";
 import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/inventory/products")({
