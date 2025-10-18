@@ -3,7 +3,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Filter, MoreHorizontal, Plus, Search } from "lucide-react";
+import {
+  ArrowUpDown,
+  Filter,
+  MoreHorizontal,
+  Plus,
+  Search,
+} from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -17,10 +23,16 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { DataTable } from "~/components/data-table";
-import { mockProducts } from "~/data/mock-products";
 import { Product } from "~/types/product";
+import { getProductsQueryOptions } from "~/lib/server";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/inventory/products")({
+  beforeLoad: ({ context }) => {
+    const { queryClient } = context;
+    const products = queryClient.ensureQueryData(getProductsQueryOptions);
+    return products;
+  },
   component: RouteComponent,
 });
 
@@ -43,83 +55,46 @@ const columns: ColumnDef<Product>[] = [
     ),
   },
   {
-    accessorKey: "sku",
-    header: "SKU",
-    cell: ({ row }) => (
-      <div className="text-muted-foreground">{row.getValue("sku")}</div>
-    ),
-  },
-  {
-    accessorKey: "category",
+    accessorKey: "categoryName",
     header: "Category",
-    cell: ({ row }) => <div>{row.getValue("category")}</div>,
+    cell: ({ row }) => <div>{row.getValue("categoryName") || "N/A"}</div>,
   },
   {
-    accessorKey: "brand",
-    header: "Brand",
-    cell: ({ row }) => <div>{row.getValue("brand")}</div>,
+    accessorKey: "vendorName",
+    header: "Vendor",
+    cell: ({ row }) => <div>{row.getValue("vendorName") || "N/A"}</div>,
   },
   {
-    accessorKey: "price",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Price
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    accessorKey: "description",
+    header: "Description",
     cell: ({ row }) => {
-      const price = parseFloat(row.getValue("price"));
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(price);
-      return <div className="font-medium">{formatted}</div>;
-    },
-  },
-  {
-    accessorKey: "stock",
-    header: ({ column }) => {
+      const description = row.getValue("description") as string | null;
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Stock
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => <div>{row.getValue("stock")}</div>,
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      return (
-        <div
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            status === "in-stock"
-              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-              : status === "low-stock"
-                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-          }`}
-        >
-          {status === "in-stock"
-            ? "In Stock"
-            : status === "low-stock"
-              ? "Low Stock"
-              : "Out of Stock"}
+        <div className="max-w-xs truncate text-muted-foreground">
+          {description || "No description"}
         </div>
       );
     },
   },
+  {
+    accessorKey: "isActive",
+    header: "Status",
+    cell: ({ row }) => {
+      const isActive = row.getValue("isActive") as boolean;
+      return (
+        <div
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+            isActive
+              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+              : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+          }`}
+        >
+          {isActive ? "Active" : "Inactive"}
+        </div>
+      );
+    },
+  },
+
   {
     id: "actions",
     enableHiding: false,
@@ -156,31 +131,52 @@ const columns: ColumnDef<Product>[] = [
 
 function RouteComponent() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const { data: productsResponse } = useQuery(getProductsQueryOptions);
 
-  // Get unique brands and categories
-  const brands = Array.from(new Set(mockProducts.map((p: Product) => p.brand)));
+  const products = productsResponse?.items || [];
+
+  // Get unique vendors and categories from fetched products
+  const vendors = Array.from(
+    new Set(
+      products
+        .map((p: Product) => p.vendorName)
+        .filter(
+          (name: string | null | undefined): name is string => name != null
+        )
+    )
+  );
   const categories = Array.from(
-    new Set(mockProducts.map((p: Product) => p.category))
+    new Set(
+      products
+        .map((p: Product) => p.categoryName)
+        .filter(
+          (name: string | null | undefined): name is string => name != null
+        )
+    )
   );
 
-  // Filter products based on search and filters
-  const filteredProducts = mockProducts.filter((product: Product) => {
+  // Filter products based on search and filters (client-side filtering)
+  const filteredProducts = products.filter((product: Product) => {
     const matchesSearch = product.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
-    const matchesBrand =
-      selectedBrands.length === 0 || selectedBrands.includes(product.brand);
+    const matchesVendor =
+      selectedVendors.length === 0 ||
+      (product.vendorName && selectedVendors.includes(product.vendorName));
     const matchesCategory =
       selectedCategories.length === 0 ||
-      selectedCategories.includes(product.category);
-    return matchesSearch && matchesBrand && matchesCategory;
+      (product.categoryName &&
+        selectedCategories.includes(product.categoryName));
+    return matchesSearch && matchesVendor && matchesCategory;
   });
 
-  const toggleBrand = (brand: string) => {
-    setSelectedBrands((prev) =>
-      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+  const toggleVendor = (vendor: string) => {
+    setSelectedVendors((prev) =>
+      prev.includes(vendor)
+        ? prev.filter((v) => v !== vendor)
+        : [...prev, vendor]
     );
   };
 
@@ -216,23 +212,23 @@ function RouteComponent() {
               <Button variant="outline" className="gap-2">
                 <Filter className="h-4 w-4" />
                 Filters
-                {(selectedBrands.length > 0 ||
+                {(selectedVendors.length > 0 ||
                   selectedCategories.length > 0) && (
                   <span className="ml-1 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-                    {selectedBrands.length + selectedCategories.length}
+                    {selectedVendors.length + selectedCategories.length}
                   </span>
                 )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Filter by Brand</DropdownMenuLabel>
-              {brands.map((brand: string) => (
+              <DropdownMenuLabel>Filter by Vendor</DropdownMenuLabel>
+              {vendors.map((vendor: string) => (
                 <DropdownMenuCheckboxItem
-                  key={brand}
-                  checked={selectedBrands.includes(brand)}
-                  onCheckedChange={() => toggleBrand(brand)}
+                  key={vendor}
+                  checked={selectedVendors.includes(vendor)}
+                  onCheckedChange={() => toggleVendor(vendor)}
                 >
-                  {brand}
+                  {vendor}
                 </DropdownMenuCheckboxItem>
               ))}
               <DropdownMenuSeparator />

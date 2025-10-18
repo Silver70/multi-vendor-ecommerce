@@ -1,10 +1,13 @@
 export type Product = {
   id: string
+  vendorId: string
+  categoryId: string
   name: string
-  sku: string
-  category: string
-  brand: string
-  price: number
-  stock: number
-  status: "in-stock" | "low-stock" | "out-of-stock"
+  description: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  vendorName: string
+  categoryName: string
 }
+
