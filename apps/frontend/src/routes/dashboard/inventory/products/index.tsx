@@ -1,5 +1,3 @@
-"use client";
-
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
@@ -27,7 +25,7 @@ import { Product } from "~/types/product";
 import { getProductsQueryOptions } from "~/lib/productFn";
 import { useQuery } from "@tanstack/react-query";
 
-export const Route = createFileRoute("/dashboard/inventory/products")({
+export const Route = createFileRoute("/dashboard/inventory/products/")({
   beforeLoad: ({ context }) => {
     const { queryClient } = context;
     const products = queryClient.ensureQueryData(getProductsQueryOptions);
