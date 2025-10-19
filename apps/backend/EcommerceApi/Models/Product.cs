@@ -18,7 +18,9 @@ namespace EcommerceApi.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
+        // 🆕 SEO-friendly identifier
+        [Required, MaxLength(200)]
+        public string Slug { get; set; } = string.Empty;
         // Navigation
         public Vendor? Vendor { get; set; }
          public Category? Category { get; set; }
