@@ -120,7 +120,8 @@ namespace EcommerceApi.Controllers
                             Id = v.Id,
                             Sku = v.Sku,
                             Price = v.Price,
-                            Stock = v.Stock
+                            Stock = v.Stock,
+                            Attributes = v.Attributes
                         }).ToList(),
                         ImageUrls = p.Images.Select(i => i.ImageUrl).ToList()
                      })

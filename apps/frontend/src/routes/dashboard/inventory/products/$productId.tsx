@@ -46,7 +46,7 @@ function RouteComponent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left side - Image */}
         <div className="w-full">
-          <div className="aspect-[3/4] bg-muted rounded-lg flex items-center justify-center">
+          <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
             {product.imageUrls && product.imageUrls.length > 0 ? (
               <img
                 src={product.imageUrls[0]}
@@ -85,12 +85,22 @@ function RouteComponent() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="space-y-2">
             {product.categoryName && (
-              <Badge variant="secondary">{product.categoryName}</Badge>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Category:
+                </span>
+                <Badge variant="secondary">{product.categoryName}</Badge>
+              </div>
             )}
             {product.vendorName && (
-              <Badge variant="outline">{product.vendorName}</Badge>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Vendor:
+                </span>
+                <Badge variant="outline">{product.vendorName}</Badge>
+              </div>
             )}
           </div>
         </div>
@@ -110,26 +120,61 @@ function RouteComponent() {
               <TableHeader>
                 <TableRow>
                   <TableHead>SKU</TableHead>
+                  <TableHead>Attributes</TableHead>
                   <TableHead className="text-right">Price</TableHead>
                   <TableHead className="text-right">Stock</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {product.variants.map((variant) => (
-                  <TableRow key={variant.id}>
-                    <TableCell className="font-medium">{variant.sku}</TableCell>
-                    <TableCell className="text-right">
-                      ${variant.price.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge
-                        variant={variant.stock > 0 ? "default" : "destructive"}
-                      >
-                        {variant.stock}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {product.variants.map((variant) => {
+                  let attributes: Record<string, string> = {};
+                  try {
+                    if (variant.attributes) {
+                      attributes = JSON.parse(variant.attributes);
+                    }
+                  } catch (e) {
+                    console.error("Failed to parse attributes:", e);
+                  }
+
+                  return (
+                    <TableRow key={variant.id}>
+                      <TableCell className="font-medium">
+                        {variant.sku}
+                      </TableCell>
+                      <TableCell>
+                        {Object.keys(attributes).length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {Object.entries(attributes).map(([key, value]) => (
+                              <Badge
+                                key={key}
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                {key}: {value}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">
+                            -
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ${variant.price.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Badge
+                          variant={
+                            variant.stock > 0 ? "default" : "destructive"
+                          }
+                        >
+                          {variant.stock}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : (

@@ -16,6 +16,7 @@ export type ProductVariant = {
   sku: string
   price: number
   stock: number
+  attributes?: string
 }
 
 export type ProductDetails = {
