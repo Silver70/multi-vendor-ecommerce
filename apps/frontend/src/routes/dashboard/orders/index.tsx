@@ -27,12 +27,11 @@ import { Order, getOrdersQueryOptions } from "~/lib/ordersFn";
 import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/orders/")({
-  beforeLoad: ({ context }) => {
-    const { queryClient } = context;
-    const orders = queryClient.ensureQueryData(getOrdersQueryOptions);
-    return orders;
-  },
   component: RouteComponent,
+  loader: ({ context }) => {
+    const { queryClient } = context;
+    queryClient.prefetchQuery(getOrdersQueryOptions);
+  },
 });
 
 const getStatusColor = (status: string) => {
@@ -207,20 +206,25 @@ const columns: ColumnDef<Order>[] = [
 function RouteComponent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const { data: ordersResponse } = useQuery(getOrdersQueryOptions);
+  const { data: ordersResponse, isLoading } = useQuery(getOrdersQueryOptions);
 
   const orders = ordersResponse?.items || [];
 
+  if (isLoading) return <div>Loading...</div>;
+
   // Get unique statuses from fetched orders
   const statuses = Array.from(
-    new Set(orders.map((o: Order) => o.status).filter((s): s is string => s != null))
+    new Set(
+      orders.map((o: Order) => o.status).filter((s): s is string => s != null)
+    )
   );
 
   // Filter orders based on search and filters (client-side filtering)
   const filteredOrders = orders.filter((order: Order) => {
     const matchesSearch =
       order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (order.userName && order.userName.toLowerCase().includes(searchQuery.toLowerCase()));
+      (order.userName &&
+        order.userName.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus =
       selectedStatuses.length === 0 || selectedStatuses.includes(order.status);
     return matchesSearch && matchesStatus;

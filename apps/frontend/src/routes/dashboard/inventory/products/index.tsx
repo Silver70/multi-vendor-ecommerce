@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -26,12 +26,11 @@ import { getProductsQueryOptions } from "~/lib/productFn";
 import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/inventory/products/")({
-  beforeLoad: ({ context }) => {
-    const { queryClient } = context;
-    const products = queryClient.ensureQueryData(getProductsQueryOptions);
-    return products;
-  },
   component: RouteComponent,
+  loader: ({ context }) => {
+    const { queryClient } = context;
+    queryClient.prefetchQuery(getProductsQueryOptions);
+  },
 });
 
 const columns: ColumnDef<Product>[] = [
@@ -131,9 +130,13 @@ function RouteComponent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const { data: productsResponse } = useQuery(getProductsQueryOptions);
+  const { data: productsResponse, isLoading } = useQuery(
+    getProductsQueryOptions
+  );
 
   const products = productsResponse?.items || [];
+
+  if (isLoading) return <div>Loading...</div>;
 
   // Get unique vendors and categories from fetched products
   const vendors = Array.from(

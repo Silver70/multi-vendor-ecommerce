@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
-import { Product } from "~/types/product";
+import { Product, ProductDetails } from "~/types/product";
 
 import axios from "axios";
 
@@ -51,7 +51,7 @@ export const getProductsQueryOptions = queryOptions({
 export const getProduct = createServerFn({ method: "GET" })
   .inputValidator((d: string) => d)
   .handler(async ({ data }) => {
-    const response = await axios.get<Product>(
+    const response = await axios.get<ProductDetails>(
       `${API_BASE_URL}/api/Products/${data}`
     );
     return response.data;

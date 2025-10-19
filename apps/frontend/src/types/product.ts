@@ -11,3 +11,20 @@ export type Product = {
   categoryName: string
 }
 
+export type ProductVariant = {
+  id: string
+  sku: string
+  price: number
+  stock: number
+}
+
+export type ProductDetails = {
+  id: string
+  name: string
+  description: string
+  categoryName: string
+  vendorName: string
+  variants: ProductVariant[]
+  imageUrls: string[]
+}
+

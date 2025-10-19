@@ -16,6 +16,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "~/components/ui/sidebar";
+import { Link } from "@tanstack/react-router";
 
 export function NavMain({
   items,
@@ -40,9 +41,9 @@ export function NavMain({
       <SidebarMenu>
         {items.map((item) => {
           // Check if any sub-item is active or if the main item is active
-          const isParentActive = item.items?.some(
-            (subItem) => currentPath === subItem.url
-          ) || currentPath === item.url;
+          const isParentActive =
+            item.items?.some((subItem) => currentPath === subItem.url) ||
+            currentPath === item.url;
 
           return (
             <Collapsible
@@ -53,7 +54,10 @@ export function NavMain({
             >
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton tooltip={item.title} isActive={isParentActive}>
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    isActive={isParentActive}
+                  >
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                     <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -65,10 +69,13 @@ export function NavMain({
                       const isSubItemActive = currentPath === subItem.url;
                       return (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild isActive={isSubItemActive}>
-                            <a href={subItem.url}>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={isSubItemActive}
+                          >
+                            <Link to={subItem.url} preload="intent">
                               <span>{subItem.title}</span>
-                            </a>
+                            </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       );
