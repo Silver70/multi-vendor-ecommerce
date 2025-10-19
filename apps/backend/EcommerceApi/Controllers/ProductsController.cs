@@ -104,20 +104,26 @@ namespace EcommerceApi.Controllers
             try
             {
                 var product = await _context.Products
+                    .Include(p => p.Vendor)
+                    .Include(p => p.Category)
+                    .Include(p => p.Variants)
                     .Where(p => p.Id == id)
-                    .Select(p => new ProductDto
-                    {
+                    .Select(p => new ProductDetailsDto
+                     {
                         Id = p.Id,
-                        VendorId = p.VendorId,
-                        CategoryId = p.CategoryId,
                         Name = p.Name,
                         Description = p.Description,
-                        IsActive = p.IsActive,
-                        CreatedAt = p.CreatedAt,
-                        UpdatedAt = p.UpdatedAt,
-                        VendorName = p.Vendor != null ? p.Vendor.Name : null,
-                        CategoryName = p.Category != null ? p.Category.Name : null
-                    })
+                        CategoryName = p.Category.Name,
+                        VendorName = p.Vendor.Name,
+                        Variants = p.Variants.Select(v => new VariantDto
+                        {
+                            Id = v.Id,
+                            Sku = v.Sku,
+                            Price = v.Price,
+                            Stock = v.Stock
+                        }).ToList(),
+                        ImageUrls = p.Images.Select(i => i.ImageUrl).ToList()
+                     })
                     .FirstOrDefaultAsync();
 
                 if (product == null)
