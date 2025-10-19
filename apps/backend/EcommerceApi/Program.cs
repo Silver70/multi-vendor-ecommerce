@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using EcommerceApi.Data;
+using EcommerceApi.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -56,6 +57,9 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register SlugGenerator
+builder.Services.AddScoped<SlugGenerator>();
 
 var app = builder.Build();
 

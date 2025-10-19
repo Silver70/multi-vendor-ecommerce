@@ -1,10 +1,11 @@
 
-namespace EcommerceApi.DTOs.Product 
+namespace EcommerceApi.DTOs.Product
 {
  public class ProductDetailsDto
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = "";
+    public string Slug { get; set; } = "";
     public string Description { get; set; } = "";
     public string CategoryName { get; set; } = "";
     public string VendorName { get; set; } = "";

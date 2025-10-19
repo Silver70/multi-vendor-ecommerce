@@ -64,6 +64,23 @@ export const getProductQueryOptions = (id: string) =>
     enabled: !!id,
   });
 
+// Get a single product by slug
+export const getProductBySlug = createServerFn({ method: "GET" })
+  .inputValidator((d: string) => d)
+  .handler(async ({ data }) => {
+    const response = await axios.get<ProductDetails>(
+      `${API_BASE_URL}/api/Products/slug/${data}`
+    );
+    return response.data;
+  });
+
+export const getProductBySlugQueryOptions = (slug: string) =>
+  queryOptions({
+    queryKey: ["products", "slug", slug],
+    queryFn: () => getProductBySlug({ data: slug }),
+    enabled: !!slug,
+  });
+
 // Create a new product
 export const createProduct = createServerFn({ method: "POST" })
   .inputValidator((d: CreateProductDto) => d)

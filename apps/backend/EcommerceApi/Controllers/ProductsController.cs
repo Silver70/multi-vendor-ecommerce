@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using EcommerceApi.Data;
 using EcommerceApi.DTOs.Product;
 using EcommerceApi.DTOs.Common;
+using EcommerceApi.Utils;
 
 namespace EcommerceApi.Controllers
 {
@@ -12,11 +13,13 @@ namespace EcommerceApi.Controllers
     {
         private readonly AppDbContext _context;
         private readonly ILogger<ProductsController> _logger;
+        private readonly SlugGenerator _slugGenerator;
 
-        public ProductsController(AppDbContext context, ILogger<ProductsController> logger)
+        public ProductsController(AppDbContext context, ILogger<ProductsController> logger, SlugGenerator slugGenerator)
         {
             _context = context;
             _logger = logger;
+            _slugGenerator = slugGenerator;
         }
 
         /// <summary>
@@ -68,6 +71,7 @@ namespace EcommerceApi.Controllers
                         CategoryId = p.CategoryId,
                         Name = p.Name,
                         Description = p.Description,
+                        Slug = p.Slug,
                         IsActive = p.IsActive,
                         CreatedAt = p.CreatedAt,
                         UpdatedAt = p.UpdatedAt,
@@ -94,6 +98,56 @@ namespace EcommerceApi.Controllers
         }
 
         /// <summary>
+        /// Get a specific product by slug
+        /// </summary>
+        [HttpGet("slug/{slug}")]
+        [ProducesResponseType(typeof(ProductDetailsDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ProductDetailsDto>> GetProductBySlug(string slug)
+        {
+            try
+            {
+                var product = await _context.Products
+                    .Include(p => p.Vendor)
+                    .Include(p => p.Category)
+                    .Include(p => p.Variants)
+                    .Include(p => p.Images)
+                    .Where(p => p.Slug == slug)
+                    .Select(p => new ProductDetailsDto
+                     {
+                        Id = p.Id,
+                        Name = p.Name,
+                        Slug = p.Slug,
+                        Description = p.Description ?? "",
+                        CategoryName = p.Category != null ? p.Category.Name : "",
+                        VendorName = p.Vendor != null ? p.Vendor.Name : "",
+                        Variants = p.Variants != null ? p.Variants.Select(v => new VariantDto
+                        {
+                            Id = v.Id,
+                            Sku = v.Sku,
+                            Price = v.Price,
+                            Stock = v.Stock,
+                            Attributes = v.Attributes
+                        }).ToList() : new List<VariantDto>(),
+                        ImageUrls = p.Images != null ? p.Images.Select(i => i.ImageUrl).ToList() : new List<string>()
+                     })
+                    .FirstOrDefaultAsync();
+
+                if (product == null)
+                {
+                    return NotFound(new { message = $"Product with slug '{slug}' not found" });
+                }
+
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving product by slug {Slug}", slug);
+                return StatusCode(500, new { message = "An error occurred while retrieving the product" });
+            }
+        }
+
+        /// <summary>
         /// Get a specific product by ID
         /// </summary>
         [HttpGet("{id}")]
@@ -107,23 +161,25 @@ namespace EcommerceApi.Controllers
                     .Include(p => p.Vendor)
                     .Include(p => p.Category)
                     .Include(p => p.Variants)
+                    .Include(p => p.Images)
                     .Where(p => p.Id == id)
                     .Select(p => new ProductDetailsDto
                      {
                         Id = p.Id,
                         Name = p.Name,
-                        Description = p.Description,
-                        CategoryName = p.Category.Name,
-                        VendorName = p.Vendor.Name,
-                        Variants = p.Variants.Select(v => new VariantDto
+                        Slug = p.Slug,
+                        Description = p.Description ?? "",
+                        CategoryName = p.Category != null ? p.Category.Name : "",
+                        VendorName = p.Vendor != null ? p.Vendor.Name : "",
+                        Variants = p.Variants != null ? p.Variants.Select(v => new VariantDto
                         {
                             Id = v.Id,
                             Sku = v.Sku,
                             Price = v.Price,
                             Stock = v.Stock,
                             Attributes = v.Attributes
-                        }).ToList(),
-                        ImageUrls = p.Images.Select(i => i.ImageUrl).ToList()
+                        }).ToList() : new List<VariantDto>(),
+                        ImageUrls = p.Images != null ? p.Images.Select(i => i.ImageUrl).ToList() : new List<string>()
                      })
                     .FirstOrDefaultAsync();
 
@@ -151,22 +207,27 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Validate category exists
-                var categoryExists = await _context.Categories.AnyAsync(c => c.Id == createDto.CategoryId);
-                if (!categoryExists)
+                // Validate category exists and get category name
+                var category = await _context.Categories.FindAsync(createDto.CategoryId);
+                if (category == null)
                 {
                     return BadRequest(new { message = "Category not found" });
                 }
 
-                // Validate vendor exists if VendorId is provided
+                // Validate vendor exists if VendorId is provided and get vendor name
+                string? vendorName = null;
                 if (createDto.VendorId.HasValue)
                 {
-                    var vendorExists = await _context.Vendors.AnyAsync(v => v.Id == createDto.VendorId.Value);
-                    if (!vendorExists)
+                    var vendor = await _context.Vendors.FindAsync(createDto.VendorId.Value);
+                    if (vendor == null)
                     {
                         return BadRequest(new { message = "Vendor not found" });
                     }
+                    vendorName = vendor.Name;
                 }
+
+                // Generate unique slug
+                var slug = await _slugGenerator.GenerateUniqueSlugAsync(createDto.Name, category.Name, vendorName);
 
                 var product = new Models.Product
                 {
@@ -175,6 +236,7 @@ namespace EcommerceApi.Controllers
                     CategoryId = createDto.CategoryId,
                     Name = createDto.Name,
                     Description = createDto.Description,
+                    Slug = slug,
                     IsActive = createDto.IsActive,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -190,6 +252,7 @@ namespace EcommerceApi.Controllers
                     CategoryId = product.CategoryId,
                     Name = product.Name,
                     Description = product.Description,
+                    Slug = product.Slug,
                     IsActive = product.IsActive,
                     CreatedAt = product.CreatedAt,
                     UpdatedAt = product.UpdatedAt

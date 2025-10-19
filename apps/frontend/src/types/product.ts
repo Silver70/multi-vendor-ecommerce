@@ -4,6 +4,7 @@ export type Product = {
   categoryId: string
   name: string
   description: string
+  slug: string
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -22,6 +23,7 @@ export type ProductVariant = {
 export type ProductDetails = {
   id: string
   name: string
+  slug: string
   description: string
   categoryName: string
   vendorName: string
