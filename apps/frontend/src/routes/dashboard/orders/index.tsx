@@ -1,6 +1,6 @@
 "use client";
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -69,141 +69,8 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const columns: ColumnDef<Order>[] = [
-  {
-    accessorKey: "id",
-    header: "Order ID",
-    cell: ({ row }) => {
-      const id = row.getValue("id") as string;
-      return <div className="font-mono text-xs">{id.slice(0, 8)}...</div>;
-    },
-  },
-  {
-    accessorKey: "userName",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Customer
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="font-medium">{row.getValue("userName") || "N/A"}</div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Status
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      return (
-        <div
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${getStatusColor(status)}`}
-        >
-          {status}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "totalAmount",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Total Amount
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const amount = row.getValue("totalAmount") as number;
-      return <div className="font-medium">{formatCurrency(amount)}</div>;
-    },
-  },
-  {
-    accessorKey: "createdAt",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Order Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const date = row.getValue("createdAt") as string;
-      return <div className="text-sm">{formatDate(date)}</div>;
-    },
-  },
-  {
-    accessorKey: "address",
-    header: "Shipping Address",
-    cell: ({ row }) => {
-      const address = row.getValue("address") as Order["address"];
-      if (!address) return <div className="text-muted-foreground">N/A</div>;
-
-      return (
-        <div className="max-w-xs truncate text-sm text-muted-foreground">
-          {address.city}, {address.country}
-        </div>
-      );
-    },
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const order = row.original;
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(order.id)}
-            >
-              Copy order ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View details</DropdownMenuItem>
-            <DropdownMenuItem>Update status</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">
-              Cancel order
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
-];
-
 function RouteComponent() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const {
@@ -217,6 +84,149 @@ function RouteComponent() {
   if (isLoading) return <div>Loading...</div>;
 
   if (error) return <div>Error: {error.message}</div>;
+
+  const columns: ColumnDef<Order>[] = [
+    {
+      accessorKey: "id",
+      header: "Order ID",
+      cell: ({ row }) => {
+        const id = row.getValue("id") as string;
+        return <div className="font-mono text-xs">{id.slice(0, 8)}...</div>;
+      },
+    },
+    {
+      accessorKey: "userName",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Customer
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("userName") || "N/A"}</div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Status
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const status = row.getValue("status") as string;
+        return (
+          <div
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${getStatusColor(status)}`}
+          >
+            {status}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "totalAmount",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Total Amount
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const amount = row.getValue("totalAmount") as number;
+        return <div className="font-medium">{formatCurrency(amount)}</div>;
+      },
+    },
+    {
+      accessorKey: "createdAt",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Order Date
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const date = row.getValue("createdAt") as string;
+        return <div className="text-sm">{formatDate(date)}</div>;
+      },
+    },
+    {
+      accessorKey: "address",
+      header: "Shipping Address",
+      cell: ({ row }) => {
+        const address = row.getValue("address") as Order["address"];
+        if (!address) return <div className="text-muted-foreground">N/A</div>;
+
+        return (
+          <div className="max-w-xs truncate text-sm text-muted-foreground">
+            {address.city}, {address.country}
+          </div>
+        );
+      },
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const order = row.original;
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => navigator.clipboard.writeText(order.id)}
+              >
+                Copy order ID
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() =>
+                  navigate({
+                    to: "/dashboard/orders/$orderId",
+                    params: { orderId: order.id },
+                  })
+                }
+              >
+                View details
+              </DropdownMenuItem>
+              <DropdownMenuItem>Update status</DropdownMenuItem>
+              <DropdownMenuItem className="text-red-600">
+                Cancel order
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
 
   // Get unique statuses from fetched orders
   const statuses = Array.from(

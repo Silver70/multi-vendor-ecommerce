@@ -1,4 +1,4 @@
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -33,100 +33,8 @@ export const Route = createFileRoute("/dashboard/inventory/products/")({
   },
 });
 
-const columns: ColumnDef<Product>[] = [
-  {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Product Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="font-medium">{row.getValue("name")}</div>
-    ),
-  },
-  {
-    accessorKey: "categoryName",
-    header: "Category",
-    cell: ({ row }) => <div>{row.getValue("categoryName") || "N/A"}</div>,
-  },
-  {
-    accessorKey: "vendorName",
-    header: "Vendor",
-    cell: ({ row }) => <div>{row.getValue("vendorName") || "N/A"}</div>,
-  },
-  {
-    accessorKey: "description",
-    header: "Description",
-    cell: ({ row }) => {
-      const description = row.getValue("description") as string | null;
-      return (
-        <div className="max-w-xs truncate text-muted-foreground">
-          {description || "No description"}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "isActive",
-    header: "Status",
-    cell: ({ row }) => {
-      const isActive = row.getValue("isActive") as boolean;
-      return (
-        <div
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            isActive
-              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-              : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-          }`}
-        >
-          {isActive ? "Active" : "Inactive"}
-        </div>
-      );
-    },
-  },
-
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const product = row.original;
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(product.id)}
-            >
-              Copy product ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Edit product</DropdownMenuItem>
-            <DropdownMenuItem>View details</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">
-              Delete product
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
-];
-
 function RouteComponent() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -137,6 +45,108 @@ function RouteComponent() {
   const products = productsResponse?.items || [];
 
   if (isLoading) return <div>Loading...</div>;
+
+  const columns: ColumnDef<Product>[] = [
+    {
+      accessorKey: "name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Product Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("name")}</div>
+      ),
+    },
+    {
+      accessorKey: "categoryName",
+      header: "Category",
+      cell: ({ row }) => <div>{row.getValue("categoryName") || "N/A"}</div>,
+    },
+    {
+      accessorKey: "vendorName",
+      header: "Vendor",
+      cell: ({ row }) => <div>{row.getValue("vendorName") || "N/A"}</div>,
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: ({ row }) => {
+        const description = row.getValue("description") as string | null;
+        return (
+          <div className="max-w-xs truncate text-muted-foreground">
+            {description || "No description"}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "isActive",
+      header: "Status",
+      cell: ({ row }) => {
+        const isActive = row.getValue("isActive") as boolean;
+        return (
+          <div
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+              isActive
+                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+            }`}
+          >
+            {isActive ? "Active" : "Inactive"}
+          </div>
+        );
+      },
+    },
+
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const product = row.original;
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => navigator.clipboard.writeText(product.id)}
+              >
+                Copy product ID
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Edit product</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  navigate({
+                    to: "/dashboard/inventory/products/$productId",
+                    params: { productId: product.id },
+                  })
+                }
+              >
+                View details
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-red-600">
+                Delete product
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
 
   // Get unique vendors and categories from fetched products
   const vendors = Array.from(
