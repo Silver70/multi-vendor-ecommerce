@@ -206,11 +206,17 @@ const columns: ColumnDef<Order>[] = [
 function RouteComponent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const { data: ordersResponse, isLoading } = useQuery(getOrdersQueryOptions);
+  const {
+    data: ordersResponse,
+    isLoading,
+    error,
+  } = useQuery(getOrdersQueryOptions);
 
   const orders = ordersResponse?.items || [];
 
   if (isLoading) return <div>Loading...</div>;
+
+  if (error) return <div>Error: {error.message}</div>;
 
   // Get unique statuses from fetched orders
   const statuses = Array.from(

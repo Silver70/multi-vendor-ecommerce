@@ -63,14 +63,12 @@ export interface UpdateOrderDto {
 }
 
 // Get all orders with pagination
-export const getOrders = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const response = await axios.get<PagedResult<Order>>(
-      `${API_BASE_URL}/api/Orders`
-    );
-    return response.data;
-  }
-);
+export const getOrders = createServerFn({ method: "GET" }).handler(async () => {
+  const response = await axios.get<PagedResult<Order>>(
+    `${API_BASE_URL}/api/Orders`
+  );
+  return response.data;
+});
 
 export const getOrdersQueryOptions = queryOptions({
   queryKey: ["orders"],
