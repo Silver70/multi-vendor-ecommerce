@@ -46,7 +46,7 @@ function RouteComponent() {
     isLoading,
     error,
   } = useQuery(getOrderQueryOptions(Route.useParams().orderId));
-
+  console.log(orderResponse);
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -222,12 +222,8 @@ function RouteComponent() {
             <h3 className="text-sm font-semibold text-muted-foreground mb-2">
               PAYMENT METHOD
             </h3>
-
-            <p className="text-sm">
-              {orderResponse.status === "pending"
-                ? "Payment Pending"
-                : "Payment Completed"}
-            </p>
+            {/* @ts-ignore */}
+            <p>{orderResponse.payments?.[0].method}</p>
           </div>
         </CardContent>
       </Card>

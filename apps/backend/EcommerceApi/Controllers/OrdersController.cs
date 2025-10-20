@@ -116,7 +116,8 @@ namespace EcommerceApi.Controllers
                             PostalCode = o.Address.PostalCode,
                             Country = o.Address.Country,
                             Phone = o.Address.Phone
-                        } : null,
+                        } : null,  
+                                        
                         Items = o.Items != null ? o.Items.Select(item => new OrderItemInfo
                         {
                             Id = item.Id,
@@ -125,7 +126,15 @@ namespace EcommerceApi.Controllers
                             ProductName = item.Variant != null && item.Variant.Product != null ? item.Variant.Product.Name : null,
                             Quantity = item.Quantity,
                             Price = item.Price
-                        }).ToList() : null
+                        }).ToList() : null, 
+                        Payments = o.Payments != null
+                        ? o.Payments.Select(p => new PaymentInfo
+                        {
+                            Id = p.Id,
+                            OrderId = p.OrderId,
+                            Method = p.Method
+                        }).ToList()
+                        : null,
                     })
                     .FirstOrDefaultAsync();
 

@@ -11,6 +11,8 @@ namespace EcommerceApi.DTOs.Order
         public string? UserName { get; set; }
         public AddressInfo? Address { get; set; }
         public List<OrderItemInfo>? Items { get; set; }
+
+        public List<PaymentInfo>? Payments { get; set; }
     }
 
     public class AddressInfo
@@ -33,5 +35,12 @@ namespace EcommerceApi.DTOs.Order
         public int Quantity { get; set; }
         public decimal Price { get; set; }
         public decimal Subtotal => Quantity * Price;
+    }
+
+    public class PaymentInfo
+    {
+        public Guid Id { get; set; }
+        public Guid OrderId { get; set; }
+        public string Method { get; set; } = string.Empty;
     }
 }
