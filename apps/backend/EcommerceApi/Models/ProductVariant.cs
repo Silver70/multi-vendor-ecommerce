@@ -16,14 +16,17 @@ namespace EcommerceApi.Models
 
         public int Stock { get; set; }
 
-        public string? Attributes { get; set; } // store JSON (e.g. {"color":"red","size":"M"})
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation
         public Product? Product { get; set; }
+
+        public ICollection<VariantAttributeValue> VariantAttributes { get; set; } = new List<VariantAttributeValue>();
         public ICollection<OrderItem>? OrderItems { get; set; }
         public ICollection<InventoryLog>? InventoryLogs { get; set; }
         public ICollection<ProductImage>? Images { get; set; }
+
+
     }
 }

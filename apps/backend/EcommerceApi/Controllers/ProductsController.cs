@@ -4,6 +4,7 @@ using EcommerceApi.Data;
 using EcommerceApi.DTOs.Product;
 using EcommerceApi.DTOs.Common;
 using EcommerceApi.Utils;
+using EcommerceApi.Services;
 
 namespace EcommerceApi.Controllers
 {
@@ -14,12 +15,238 @@ namespace EcommerceApi.Controllers
         private readonly AppDbContext _context;
         private readonly ILogger<ProductsController> _logger;
         private readonly SlugGenerator _slugGenerator;
+        private readonly VariantGenerationService _variantService;
 
-        public ProductsController(AppDbContext context, ILogger<ProductsController> logger, SlugGenerator slugGenerator)
+        public ProductsController(
+            AppDbContext context,
+            ILogger<ProductsController> logger,
+            SlugGenerator slugGenerator,
+            VariantGenerationService variantService)
         {
             _context = context;
             _logger = logger;
             _slugGenerator = slugGenerator;
+            _variantService = variantService;
+        }
+
+        /// <summary>
+        /// Create a product with attributes and variants in one request
+        /// </summary>
+        [HttpPost("composite")]
+        [ProducesResponseType(typeof(CompositeProductResponseDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<CompositeProductResponseDto>> CreateCompositeProduct([FromBody] CreateCompositeProductDto createDto)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Validate category exists
+                var category = await _context.Categories.FindAsync(createDto.ProductInfo.CategoryId);
+                if (category == null)
+                {
+                    return BadRequest(new { message = "Category not found" });
+                }
+
+                // Validate vendor exists if provided
+                string? vendorName = null;
+                if (createDto.ProductInfo.VendorId.HasValue)
+                {
+                    var vendor = await _context.Vendors.FindAsync(createDto.ProductInfo.VendorId.Value);
+                    if (vendor == null)
+                    {
+                        return BadRequest(new { message = "Vendor not found" });
+                    }
+                    vendorName = vendor.Name;
+                }
+
+                // Generate unique slug
+                var slug = await _slugGenerator.GenerateUniqueSlugAsync(
+                    createDto.ProductInfo.Name,
+                    category.Name,
+                    vendorName);
+
+                // Create product
+                var product = new Models.Product
+                {
+                    Id = Guid.NewGuid(),
+                    VendorId = createDto.ProductInfo.VendorId,
+                    CategoryId = createDto.ProductInfo.CategoryId,
+                    Name = createDto.ProductInfo.Name,
+                    Description = createDto.ProductInfo.Description,
+                    Slug = slug,
+                    IsActive = createDto.ProductInfo.IsActive,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.Products.Add(product);
+                await _context.SaveChangesAsync();
+
+                // Process attributes and create variants if provided
+                List<Models.ProductVariant> variants = new();
+                if (createDto.Attributes.Any() && createDto.Variants.Any())
+                {
+                    var attributeValueMap = await _variantService.ProcessAttributesAsync(createDto.Attributes);
+                    variants = await _variantService.CreateVariantsAsync(
+                        product.Id,
+                        product.Name,
+                        createDto.Variants,
+                        attributeValueMap);
+                }
+
+                await transaction.CommitAsync();
+
+                // Build response
+                var response = new CompositeProductResponseDto
+                {
+                    Id = product.Id,
+                    Name = product.Name,
+                    Slug = product.Slug,
+                    Description = product.Description,
+                    CategoryId = product.CategoryId,
+                    VendorId = product.VendorId,
+                    IsActive = product.IsActive,
+                    CreatedAt = product.CreatedAt,
+                    UpdatedAt = product.UpdatedAt,
+                    Attributes = createDto.Attributes.Select(a => new ProductAttributeOutputDto
+                    {
+                        Name = a.Name,
+                        Values = a.Values
+                    }).ToList(),
+                    Variants = new List<VariantOutputDto>()
+                };
+
+                // Load variant attributes
+                foreach (var variant in variants)
+                {
+                    var attrs = await _variantService.LoadVariantAttributesAsync(variant.Id);
+                    response.Variants.Add(new VariantOutputDto
+                    {
+                        Id = variant.Id,
+                        Sku = variant.Sku,
+                        Price = variant.Price,
+                        Stock = variant.Stock,
+                        Attributes = attrs,
+                        CreatedAt = variant.CreatedAt
+                    });
+                }
+
+                return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, response);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error creating composite product");
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Update a product with attributes and variants (replaces all variants)
+        /// </summary>
+        [HttpPut("{id}/composite")]
+        [ProducesResponseType(typeof(CompositeProductResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<CompositeProductResponseDto>> UpdateCompositeProduct(
+            Guid id,
+            [FromBody] UpdateCompositeProductDto updateDto)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var product = await _context.Products.FindAsync(id);
+                if (product == null)
+                {
+                    return NotFound(new { message = $"Product with ID {id} not found" });
+                }
+
+                // Validate category exists
+                var categoryExists = await _context.Categories.AnyAsync(c => c.Id == updateDto.ProductInfo.CategoryId);
+                if (!categoryExists)
+                {
+                    return BadRequest(new { message = "Category not found" });
+                }
+
+                // Validate vendor exists if provided
+                if (updateDto.ProductInfo.VendorId.HasValue)
+                {
+                    var vendorExists = await _context.Vendors.AnyAsync(v => v.Id == updateDto.ProductInfo.VendorId.Value);
+                    if (!vendorExists)
+                    {
+                        return BadRequest(new { message = "Vendor not found" });
+                    }
+                }
+
+                // Update product info
+                product.VendorId = updateDto.ProductInfo.VendorId;
+                product.CategoryId = updateDto.ProductInfo.CategoryId;
+                product.Name = updateDto.ProductInfo.Name;
+                product.Description = updateDto.ProductInfo.Description;
+                product.IsActive = updateDto.ProductInfo.IsActive;
+                product.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                // Delete old variants and create new ones
+                await _variantService.DeleteProductVariantsAsync(product.Id);
+
+                List<Models.ProductVariant> variants = new();
+                if (updateDto.Attributes.Any() && updateDto.Variants.Any())
+                {
+                    var attributeValueMap = await _variantService.ProcessAttributesAsync(updateDto.Attributes);
+                    variants = await _variantService.CreateVariantsAsync(
+                        product.Id,
+                        product.Name,
+                        updateDto.Variants,
+                        attributeValueMap);
+                }
+
+                await transaction.CommitAsync();
+
+                // Build response
+                var response = new CompositeProductResponseDto
+                {
+                    Id = product.Id,
+                    Name = product.Name,
+                    Slug = product.Slug,
+                    Description = product.Description,
+                    CategoryId = product.CategoryId,
+                    VendorId = product.VendorId,
+                    IsActive = product.IsActive,
+                    CreatedAt = product.CreatedAt,
+                    UpdatedAt = product.UpdatedAt,
+                    Attributes = updateDto.Attributes.Select(a => new ProductAttributeOutputDto
+                    {
+                        Name = a.Name,
+                        Values = a.Values
+                    }).ToList(),
+                    Variants = new List<VariantOutputDto>()
+                };
+
+                // Load variant attributes
+                foreach (var variant in variants)
+                {
+                    var attrs = await _variantService.LoadVariantAttributesAsync(variant.Id);
+                    response.Variants.Add(new VariantOutputDto
+                    {
+                        Id = variant.Id,
+                        Sku = variant.Sku,
+                        Price = variant.Price,
+                        Stock = variant.Stock,
+                        Attributes = attrs,
+                        CreatedAt = variant.CreatedAt
+                    });
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error updating composite product {ProductId}", id);
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
 
         /// <summary>
@@ -112,33 +339,43 @@ namespace EcommerceApi.Controllers
                     .Include(p => p.Category)
                     .Include(p => p.Variants)
                     .Include(p => p.Images)
-                    .Where(p => p.Slug == slug)
-                    .Select(p => new ProductDetailsDto
-                     {
-                        Id = p.Id,
-                        Name = p.Name,
-                        Slug = p.Slug,
-                        Description = p.Description ?? "",
-                        CategoryName = p.Category != null ? p.Category.Name : "",
-                        VendorName = p.Vendor != null ? p.Vendor.Name : "",
-                        Variants = p.Variants != null ? p.Variants.Select(v => new VariantDto
-                        {
-                            Id = v.Id,
-                            Sku = v.Sku,
-                            Price = v.Price,
-                            Stock = v.Stock,
-                            Attributes = v.Attributes
-                        }).ToList() : new List<VariantDto>(),
-                        ImageUrls = p.Images != null ? p.Images.Select(i => i.ImageUrl).ToList() : new List<string>()
-                     })
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync(p => p.Slug == slug);
 
                 if (product == null)
                 {
                     return NotFound(new { message = $"Product with slug '{slug}' not found" });
                 }
 
-                return Ok(product);
+                var productDto = new ProductDetailsDto
+                {
+                    Id = product.Id,
+                    Name = product.Name,
+                    Slug = product.Slug,
+                    Description = product.Description ?? "",
+                    CategoryName = product.Category != null ? product.Category.Name : "",
+                    VendorName = product.Vendor != null ? product.Vendor.Name : "",
+                    ImageUrls = product.Images != null ? product.Images.Select(i => i.ImageUrl).ToList() : new List<string>(),
+                    Variants = new List<VariantDto>()
+                };
+
+                // Load variants with attributes
+                if (product.Variants != null)
+                {
+                    foreach (var variant in product.Variants)
+                    {
+                        var attrs = await _variantService.LoadVariantAttributesAsync(variant.Id);
+                        productDto.Variants.Add(new VariantDto
+                        {
+                            Id = variant.Id,
+                            Sku = variant.Sku,
+                            Price = variant.Price,
+                            Stock = variant.Stock,
+                            Attributes = attrs
+                        });
+                    }
+                }
+
+                return Ok(productDto);
             }
             catch (Exception ex)
             {
@@ -162,33 +399,43 @@ namespace EcommerceApi.Controllers
                     .Include(p => p.Category)
                     .Include(p => p.Variants)
                     .Include(p => p.Images)
-                    .Where(p => p.Id == id)
-                    .Select(p => new ProductDetailsDto
-                     {
-                        Id = p.Id,
-                        Name = p.Name,
-                        Slug = p.Slug,
-                        Description = p.Description ?? "",
-                        CategoryName = p.Category != null ? p.Category.Name : "",
-                        VendorName = p.Vendor != null ? p.Vendor.Name : "",
-                        Variants = p.Variants != null ? p.Variants.Select(v => new VariantDto
-                        {
-                            Id = v.Id,
-                            Sku = v.Sku,
-                            Price = v.Price,
-                            Stock = v.Stock,
-                            Attributes = v.Attributes
-                        }).ToList() : new List<VariantDto>(),
-                        ImageUrls = p.Images != null ? p.Images.Select(i => i.ImageUrl).ToList() : new List<string>()
-                     })
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync(p => p.Id == id);
 
                 if (product == null)
                 {
                     return NotFound(new { message = $"Product with ID {id} not found" });
                 }
 
-                return Ok(product);
+                var productDto = new ProductDetailsDto
+                {
+                    Id = product.Id,
+                    Name = product.Name,
+                    Slug = product.Slug,
+                    Description = product.Description ?? "",
+                    CategoryName = product.Category != null ? product.Category.Name : "",
+                    VendorName = product.Vendor != null ? product.Vendor.Name : "",
+                    ImageUrls = product.Images != null ? product.Images.Select(i => i.ImageUrl).ToList() : new List<string>(),
+                    Variants = new List<VariantDto>()
+                };
+
+                // Load variants with attributes
+                if (product.Variants != null)
+                {
+                    foreach (var variant in product.Variants)
+                    {
+                        var attrs = await _variantService.LoadVariantAttributesAsync(variant.Id);
+                        productDto.Variants.Add(new VariantDto
+                        {
+                            Id = variant.Id,
+                            Sku = variant.Sku,
+                            Price = variant.Price,
+                            Stock = variant.Stock,
+                            Attributes = attrs
+                        });
+                    }
+                }
+
+                return Ok(productDto);
             }
             catch (Exception ex)
             {

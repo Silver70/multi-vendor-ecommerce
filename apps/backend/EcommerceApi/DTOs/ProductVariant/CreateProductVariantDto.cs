@@ -18,7 +18,7 @@ namespace EcommerceApi.DTOs.ProductVariant
         [Range(0, int.MaxValue, ErrorMessage = "Stock cannot be negative")]
         public int Stock { get; set; } = 0;
 
-        [MaxLength(1000, ErrorMessage = "Attributes cannot exceed 1000 characters")]
-        public string? Attributes { get; set; }
+        [Required(ErrorMessage = "Attributes are required")]
+        public Dictionary<string, string> Attributes { get; set; } = new();
     }
 }

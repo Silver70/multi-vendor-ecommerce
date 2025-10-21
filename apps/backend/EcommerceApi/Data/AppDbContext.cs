@@ -21,5 +21,11 @@ namespace EcommerceApi.Data
         public DbSet<Payment> Payments => Set<Payment>();
         public DbSet<InventoryLog> InventoryLogs => Set<InventoryLog>();
         public DbSet<Review> Reviews => Set<Review>();
+        public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
+        public DbSet<ProductAttributeValue> ProductAttributeValues => Set<ProductAttributeValue>();
+        public DbSet<VariantAttributeValue> VariantAttributeValues => Set<VariantAttributeValue>();
+
+
+        
     }
 }

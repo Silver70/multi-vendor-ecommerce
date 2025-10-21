@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using EcommerceApi.Data;
 using EcommerceApi.DTOs.ProductVariant;
 using EcommerceApi.DTOs.Common;
+using EcommerceApi.Services;
+using EcommerceApi.Models;
 
 namespace EcommerceApi.Controllers
 {
@@ -12,11 +14,16 @@ namespace EcommerceApi.Controllers
     {
         private readonly AppDbContext _context;
         private readonly ILogger<ProductVariantsController> _logger;
+        private readonly VariantGenerationService _variantService;
 
-        public ProductVariantsController(AppDbContext context, ILogger<ProductVariantsController> logger)
+        public ProductVariantsController(
+            AppDbContext context,
+            ILogger<ProductVariantsController> logger,
+            VariantGenerationService variantService)
         {
             _context = context;
             _logger = logger;
+            _variantService = variantService;
         }
 
         /// <summary>
@@ -65,21 +72,28 @@ namespace EcommerceApi.Controllers
                 query = ApplySorting(query, filterParams.SortBy, filterParams.SortDescending);
 
                 // Apply pagination
-                var items = await query
+                var variants = await query
                     .Skip((filterParams.PageNumber - 1) * filterParams.PageSize)
                     .Take(filterParams.PageSize)
-                    .Select(pv => new ProductVariantDto
-                    {
-                        Id = pv.Id,
-                        ProductId = pv.ProductId,
-                        Sku = pv.Sku,
-                        Price = pv.Price,
-                        Stock = pv.Stock,
-                        Attributes = pv.Attributes,
-                        CreatedAt = pv.CreatedAt,
-                        ProductName = pv.Product != null ? pv.Product.Name : null
-                    })
+                    .Include(pv => pv.Product)
                     .ToListAsync();
+
+                var items = new List<ProductVariantDto>();
+                foreach (var variant in variants)
+                {
+                    var attrs = await _variantService.LoadVariantAttributesAsync(variant.Id);
+                    items.Add(new ProductVariantDto
+                    {
+                        Id = variant.Id,
+                        ProductId = variant.ProductId,
+                        Sku = variant.Sku,
+                        Price = variant.Price,
+                        Stock = variant.Stock,
+                        Attributes = attrs,
+                        CreatedAt = variant.CreatedAt,
+                        ProductName = variant.Product != null ? variant.Product.Name : null
+                    });
+                }
 
                 var result = new PagedResult<ProductVariantDto>
                 {
@@ -108,27 +122,29 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                var productVariant = await _context.ProductVariants
-                    .Where(pv => pv.Id == id)
-                    .Select(pv => new ProductVariantDto
-                    {
-                        Id = pv.Id,
-                        ProductId = pv.ProductId,
-                        Sku = pv.Sku,
-                        Price = pv.Price,
-                        Stock = pv.Stock,
-                        Attributes = pv.Attributes,
-                        CreatedAt = pv.CreatedAt,
-                        ProductName = pv.Product != null ? pv.Product.Name : null
-                    })
-                    .FirstOrDefaultAsync();
+                var variant = await _context.ProductVariants
+                    .Include(pv => pv.Product)
+                    .FirstOrDefaultAsync(pv => pv.Id == id);
 
-                if (productVariant == null)
+                if (variant == null)
                 {
                     return NotFound(new { message = $"Product variant with ID {id} not found" });
                 }
 
-                return Ok(productVariant);
+                var attrs = await _variantService.LoadVariantAttributesAsync(variant.Id);
+                var productVariantDto = new ProductVariantDto
+                {
+                    Id = variant.Id,
+                    ProductId = variant.ProductId,
+                    Sku = variant.Sku,
+                    Price = variant.Price,
+                    Stock = variant.Stock,
+                    Attributes = attrs,
+                    CreatedAt = variant.CreatedAt,
+                    ProductName = variant.Product != null ? variant.Product.Name : null
+                };
+
+                return Ok(productVariantDto);
             }
             catch (Exception ex)
             {
@@ -148,8 +164,8 @@ namespace EcommerceApi.Controllers
             try
             {
                 // Validate product exists
-                var productExists = await _context.Products.AnyAsync(p => p.Id == createDto.ProductId);
-                if (!productExists)
+                var product = await _context.Products.FindAsync(createDto.ProductId);
+                if (product == null)
                 {
                     return BadRequest(new { message = "Product not found" });
                 }
@@ -161,16 +177,58 @@ namespace EcommerceApi.Controllers
                     return BadRequest(new { message = "A product variant with this SKU already exists" });
                 }
 
-                var productVariant = new Models.ProductVariant
+                var productVariant = new ProductVariant
                 {
                     Id = Guid.NewGuid(),
                     ProductId = createDto.ProductId,
                     Sku = createDto.Sku,
                     Price = createDto.Price,
                     Stock = createDto.Stock,
-                    Attributes = createDto.Attributes,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    VariantAttributes = new List<VariantAttributeValue>()
                 };
+
+                // Process attributes
+                foreach (var attr in createDto.Attributes)
+                {
+                    // Find or create attribute
+                    var attribute = await _context.ProductAttributes
+                        .Include(a => a.Values)
+                        .FirstOrDefaultAsync(a => a.Name.ToLower() == attr.Key.ToLower());
+
+                    if (attribute == null)
+                    {
+                        attribute = new ProductAttribute
+                        {
+                            Id = Guid.NewGuid(),
+                            Name = attr.Key
+                        };
+                        _context.ProductAttributes.Add(attribute);
+                    }
+
+                    // Find or create attribute value
+                    var attributeValue = attribute.Values
+                        .FirstOrDefault(v => v.Value.ToLower() == attr.Value.ToLower());
+
+                    if (attributeValue == null)
+                    {
+                        attributeValue = new ProductAttributeValue
+                        {
+                            Id = Guid.NewGuid(),
+                            AttributeId = attribute.Id,
+                            Value = attr.Value,
+                            Attribute = attribute
+                        };
+                        _context.ProductAttributeValues.Add(attributeValue);
+                    }
+
+                    productVariant.VariantAttributes.Add(new VariantAttributeValue
+                    {
+                        Id = Guid.NewGuid(),
+                        VariantId = productVariant.Id,
+                        AttributeValueId = attributeValue.Id
+                    });
+                }
 
                 _context.ProductVariants.Add(productVariant);
                 await _context.SaveChangesAsync();
@@ -182,7 +240,7 @@ namespace EcommerceApi.Controllers
                     Sku = productVariant.Sku,
                     Price = productVariant.Price,
                     Stock = productVariant.Stock,
-                    Attributes = productVariant.Attributes,
+                    Attributes = createDto.Attributes,
                     CreatedAt = productVariant.CreatedAt
                 };
 
@@ -206,7 +264,10 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                var productVariant = await _context.ProductVariants.FindAsync(id);
+                var productVariant = await _context.ProductVariants
+                    .Include(pv => pv.VariantAttributes)
+                    .FirstOrDefaultAsync(pv => pv.Id == id);
+
                 if (productVariant == null)
                 {
                     return NotFound(new { message = $"Product variant with ID {id} not found" });
@@ -223,7 +284,52 @@ namespace EcommerceApi.Controllers
                 productVariant.Sku = updateDto.Sku;
                 productVariant.Price = updateDto.Price;
                 productVariant.Stock = updateDto.Stock;
-                productVariant.Attributes = updateDto.Attributes;
+
+                // Remove old attribute associations
+                _context.VariantAttributeValues.RemoveRange(productVariant.VariantAttributes);
+
+                // Add new attribute associations
+                productVariant.VariantAttributes = new List<VariantAttributeValue>();
+                foreach (var attr in updateDto.Attributes)
+                {
+                    // Find or create attribute
+                    var attribute = await _context.ProductAttributes
+                        .Include(a => a.Values)
+                        .FirstOrDefaultAsync(a => a.Name.ToLower() == attr.Key.ToLower());
+
+                    if (attribute == null)
+                    {
+                        attribute = new ProductAttribute
+                        {
+                            Id = Guid.NewGuid(),
+                            Name = attr.Key
+                        };
+                        _context.ProductAttributes.Add(attribute);
+                    }
+
+                    // Find or create attribute value
+                    var attributeValue = attribute.Values
+                        .FirstOrDefault(v => v.Value.ToLower() == attr.Value.ToLower());
+
+                    if (attributeValue == null)
+                    {
+                        attributeValue = new ProductAttributeValue
+                        {
+                            Id = Guid.NewGuid(),
+                            AttributeId = attribute.Id,
+                            Value = attr.Value,
+                            Attribute = attribute
+                        };
+                        _context.ProductAttributeValues.Add(attributeValue);
+                    }
+
+                    productVariant.VariantAttributes.Add(new VariantAttributeValue
+                    {
+                        Id = Guid.NewGuid(),
+                        VariantId = productVariant.Id,
+                        AttributeValueId = attributeValue.Id
+                    });
+                }
 
                 await _context.SaveChangesAsync();
 
@@ -234,7 +340,7 @@ namespace EcommerceApi.Controllers
                     Sku = productVariant.Sku,
                     Price = productVariant.Price,
                     Stock = productVariant.Stock,
-                    Attributes = productVariant.Attributes,
+                    Attributes = updateDto.Attributes,
                     CreatedAt = productVariant.CreatedAt
                 };
 

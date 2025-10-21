@@ -11,7 +11,7 @@ namespace EcommerceApi.Models
     public string Value { get; set; } = string.Empty; // e.g. "Red", "Blue", "128GB"
 
     public ProductAttribute Attribute { get; set; } = null!;
-    // public ICollection<VariantAttributeValue> VariantAttributes { get; set; } = new List<VariantAttributeValue>();
+    public ICollection<VariantAttributeValue> VariantAttributes { get; set; } = new List<VariantAttributeValue>();
 }
 
 }

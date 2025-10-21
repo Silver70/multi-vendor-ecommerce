@@ -4,6 +4,7 @@ namespace EcommerceApi.Models
 {
     public class VariantAttributeValue
 {
+    public Guid Id { get; set; }
     public Guid VariantId { get; set; }
     public Guid AttributeValueId { get; set; }
 
