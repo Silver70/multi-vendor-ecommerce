@@ -17,7 +17,7 @@ export type ProductVariant = {
   sku: string
   price: number
   stock: number
-  attributes?: string
+  attributes?: Record<string, string>
 }
 
 export type ProductDetails = {

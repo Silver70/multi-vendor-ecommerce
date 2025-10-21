@@ -21,14 +21,14 @@ export interface CreateProductVariantDto {
   sku: string;
   price: number;
   stock?: number;
-  attributes?: string;
+  attributes?: Record<string, string>;
 }
 
 export interface UpdateProductVariantDto {
   sku: string;
   price: number;
   stock: number;
-  attributes?: string;
+  attributes?: Record<string, string>;
 }
 
 export interface ProductVariantFilterParams {

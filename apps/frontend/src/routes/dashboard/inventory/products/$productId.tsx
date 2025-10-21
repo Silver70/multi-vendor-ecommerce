@@ -127,14 +127,7 @@ function RouteComponent() {
               </TableHeader>
               <TableBody>
                 {product.variants.map((variant) => {
-                  let attributes: Record<string, string> = {};
-                  try {
-                    if (variant.attributes) {
-                      attributes = JSON.parse(variant.attributes);
-                    }
-                  } catch (e) {
-                    console.error("Failed to parse attributes:", e);
-                  }
+                  const attributes = variant.attributes || {};
 
                   return (
                     <TableRow key={variant.id}>
