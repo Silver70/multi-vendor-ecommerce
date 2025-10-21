@@ -20,6 +20,7 @@ import { Route as DashboardOrdersIndexRouteImport } from './routes/dashboard/ord
 import { Route as DashboardOrdersOrderIdRouteImport } from './routes/dashboard/orders/$orderId'
 import { Route as DashboardInventoryCategoryRouteImport } from './routes/dashboard/inventory/category'
 import { Route as DashboardInventoryProductsIndexRouteImport } from './routes/dashboard/inventory/products/index'
+import { Route as DashboardInventoryProductsCreateRouteImport } from './routes/dashboard/inventory/products/create'
 import { Route as DashboardInventoryProductsProductIdRouteImport } from './routes/dashboard/inventory/products/$productId'
 
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
@@ -79,6 +80,12 @@ const DashboardInventoryProductsIndexRoute =
     path: '/inventory/products/',
     getParentRoute: () => DashboardRouteRoute,
   } as any)
+const DashboardInventoryProductsCreateRoute =
+  DashboardInventoryProductsCreateRouteImport.update({
+    id: '/inventory/products/create',
+    path: '/inventory/products/create',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 const DashboardInventoryProductsProductIdRoute =
   DashboardInventoryProductsProductIdRouteImport.update({
     id: '/inventory/products/$productId',
@@ -98,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/orders/$orderId': typeof DashboardOrdersOrderIdRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
   '/dashboard/inventory/products/$productId': typeof DashboardInventoryProductsProductIdRoute
+  '/dashboard/inventory/products/create': typeof DashboardInventoryProductsCreateRoute
   '/dashboard/inventory/products': typeof DashboardInventoryProductsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -112,6 +120,7 @@ export interface FileRoutesByTo {
   '/dashboard/orders/$orderId': typeof DashboardOrdersOrderIdRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
   '/dashboard/inventory/products/$productId': typeof DashboardInventoryProductsProductIdRoute
+  '/dashboard/inventory/products/create': typeof DashboardInventoryProductsCreateRoute
   '/dashboard/inventory/products': typeof DashboardInventoryProductsIndexRoute
 }
 export interface FileRoutesById {
@@ -127,6 +136,7 @@ export interface FileRoutesById {
   '/dashboard/orders/$orderId': typeof DashboardOrdersOrderIdRoute
   '/dashboard/orders/': typeof DashboardOrdersIndexRoute
   '/dashboard/inventory/products/$productId': typeof DashboardInventoryProductsProductIdRoute
+  '/dashboard/inventory/products/create': typeof DashboardInventoryProductsCreateRoute
   '/dashboard/inventory/products/': typeof DashboardInventoryProductsIndexRoute
 }
 export interface FileRouteTypes {
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/dashboard/orders/$orderId'
     | '/dashboard/orders'
     | '/dashboard/inventory/products/$productId'
+    | '/dashboard/inventory/products/create'
     | '/dashboard/inventory/products'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/dashboard/orders/$orderId'
     | '/dashboard/orders'
     | '/dashboard/inventory/products/$productId'
+    | '/dashboard/inventory/products/create'
     | '/dashboard/inventory/products'
   id:
     | '__root__'
@@ -171,6 +183,7 @@ export interface FileRouteTypes {
     | '/dashboard/orders/$orderId'
     | '/dashboard/orders/'
     | '/dashboard/inventory/products/$productId'
+    | '/dashboard/inventory/products/create'
     | '/dashboard/inventory/products/'
   fileRoutesById: FileRoutesById
 }
@@ -262,6 +275,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardInventoryProductsIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/inventory/products/create': {
+      id: '/dashboard/inventory/products/create'
+      path: '/inventory/products/create'
+      fullPath: '/dashboard/inventory/products/create'
+      preLoaderRoute: typeof DashboardInventoryProductsCreateRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/dashboard/inventory/products/$productId': {
       id: '/dashboard/inventory/products/$productId'
       path: '/inventory/products/$productId'
@@ -278,6 +298,7 @@ interface DashboardRouteRouteChildren {
   DashboardOrdersOrderIdRoute: typeof DashboardOrdersOrderIdRoute
   DashboardOrdersIndexRoute: typeof DashboardOrdersIndexRoute
   DashboardInventoryProductsProductIdRoute: typeof DashboardInventoryProductsProductIdRoute
+  DashboardInventoryProductsCreateRoute: typeof DashboardInventoryProductsCreateRoute
   DashboardInventoryProductsIndexRoute: typeof DashboardInventoryProductsIndexRoute
 }
 
@@ -288,6 +309,7 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardOrdersIndexRoute: DashboardOrdersIndexRoute,
   DashboardInventoryProductsProductIdRoute:
     DashboardInventoryProductsProductIdRoute,
+  DashboardInventoryProductsCreateRoute: DashboardInventoryProductsCreateRoute,
   DashboardInventoryProductsIndexRoute: DashboardInventoryProductsIndexRoute,
 }
 

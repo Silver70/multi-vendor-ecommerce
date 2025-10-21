@@ -257,7 +257,12 @@ function RouteComponent() {
           </DropdownMenu>
 
           {/* Add New Product Button */}
-          <Button className="gap-2">
+          <Button
+            className="gap-2"
+            onClick={() =>
+              navigate({ to: "/dashboard/inventory/products/create" })
+            }
+          >
             <Plus className="h-4 w-4" />
             Add Product
           </Button>

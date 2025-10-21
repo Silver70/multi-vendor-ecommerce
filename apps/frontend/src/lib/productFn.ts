@@ -32,6 +32,61 @@ export interface UpdateProductDto {
   isActive: boolean;
 }
 
+export interface ProductAttributeInput {
+  name: string;
+  values: string[];
+}
+
+export interface VariantInput {
+  sku?: string;
+  price: number;
+  stock: number;
+  attributes: Record<string, string>;
+}
+
+export interface ProductInfoDto {
+  name: string;
+  description?: string;
+  categoryId: string;
+  vendorId?: string;
+  price: number;
+  isActive?: boolean;
+}
+
+export interface CreateCompositeProductDto {
+  productInfo: ProductInfoDto;
+  attributes: ProductAttributeInput[];
+  variants: VariantInput[];
+}
+
+export interface ProductAttributeOutput {
+  name: string;
+  values: string[];
+}
+
+export interface VariantOutput {
+  id: string;
+  sku: string;
+  price: number;
+  stock: number;
+  attributes: Record<string, string>;
+  createdAt: string;
+}
+
+export interface CompositeProductResponse {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  categoryId: string;
+  vendorId?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  attributes: ProductAttributeOutput[];
+  variants: VariantOutput[];
+}
+
 // Get all products with pagination
 export const getProducts = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -109,4 +164,15 @@ export const deleteProduct = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await axios.delete(`${API_BASE_URL}/api/Products/${data}`);
     return { success: true };
+  });
+
+// Create a composite product (with attributes and variants)
+export const createCompositeProduct = createServerFn({ method: "POST" })
+  .inputValidator((d: CreateCompositeProductDto) => d)
+  .handler(async ({ data }) => {
+    const response = await axios.post<CompositeProductResponse>(
+      `${API_BASE_URL}/api/Products/composite`,
+      data
+    );
+    return response.data;
   });
