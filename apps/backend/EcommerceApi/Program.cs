@@ -66,27 +66,26 @@ builder.Services.AddScoped<VariantGenerationService>();
 var app = builder.Build();
 
 // Seed database if in development mode and SEED_DATABASE environment variable is set
-// TODO: Re-enable database seeding after updating DatabaseSeeder for new schema
-// if (app.Environment.IsDevelopment())
-// {
-//     var seedDatabase = builder.Configuration.GetValue<bool>("SeedDatabase");
-//     if (seedDatabase)
-//     {
-//         using var scope = app.Services.CreateScope();
-//         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+if (app.Environment.IsDevelopment())
+{
+    var seedDatabase = builder.Configuration.GetValue<bool>("SeedDatabase");
+    if (seedDatabase)
+    {
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-//         try
-//         {
-//             // Use async seeding for better performance
-//             await DatabaseSeeder.SeedDatabaseAsync(dbContext);
-//         }
-//         catch (Exception ex)
-//         {
-//             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-//             logger.LogError(ex, "An error occurred while seeding the database.");
-//         }
-//     }
-// }
+        try
+        {
+            // Use async seeding for better performance
+            await DatabaseSeeder.SeedDatabaseAsync(dbContext);
+        }
+        catch (Exception ex)
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "An error occurred while seeding the database.");
+        }
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
