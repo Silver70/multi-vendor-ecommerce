@@ -4,7 +4,7 @@ namespace EcommerceApi.DTOs.Order
 {
     public class OrderFilterParams : PaginationParams
     {
-        public Guid? UserId { get; set; }
+        public Guid? CustomerId { get; set; }
         public string? Status { get; set; }
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }

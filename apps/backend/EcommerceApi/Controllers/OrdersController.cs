@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using EcommerceApi.Data;
 using EcommerceApi.DTOs.Order;
 using EcommerceApi.DTOs.Common;
+using EcommerceApi.DTOs.Customer;
 
 namespace EcommerceApi.Controllers
 {
@@ -27,8 +28,8 @@ namespace EcommerceApi.Controllers
             {
                 var query = _context.Orders.AsQueryable();
 
-                if (filterParams.UserId.HasValue)
-                    query = query.Where(o => o.UserId == filterParams.UserId.Value);
+                if (filterParams.CustomerId.HasValue)
+                    query = query.Where(o => o.CustomerId == filterParams.CustomerId.Value);
 
                 if (!string.IsNullOrWhiteSpace(filterParams.Status))
                     query = query.Where(o => o.Status == filterParams.Status);
@@ -54,12 +55,21 @@ namespace EcommerceApi.Controllers
                     .Select(o => new OrderDto
                     {
                         Id = o.Id,
-                        UserId = o.UserId,
+                        CustomerId = o.CustomerId,
                         AddressId = o.AddressId,
                         Status = o.Status,
                         TotalAmount = o.TotalAmount,
                         CreatedAt = o.CreatedAt,
-                        UserName = o.User != null ? o.User.Name : null,
+                        Customer = o.Customer != null ? new CustomerDto
+                        {
+                            Id = o.Customer.Id,
+                            UserId = o.Customer.UserId,
+                            FullName = o.Customer.FullName,
+                            Phone = o.Customer.Phone,
+                            DateOfBirth = o.Customer.DateOfBirth,
+                            UserEmail = o.Customer.User != null ? o.Customer.User.Email : null,
+                            UserName = o.Customer.User != null ? o.Customer.User.Name : null
+                        } : null,
                         Address = o.Address != null ? new AddressInfo
                         {
                             FullName = o.Address.FullName,
@@ -101,12 +111,21 @@ namespace EcommerceApi.Controllers
                     .Select(o => new OrderDto
                     {
                         Id = o.Id,
-                        UserId = o.UserId,
+                        CustomerId = o.CustomerId,
                         AddressId = o.AddressId,
                         Status = o.Status,
                         TotalAmount = o.TotalAmount,
                         CreatedAt = o.CreatedAt,
-                        UserName = o.User != null ? o.User.Name : null,
+                        Customer = o.Customer != null ? new CustomerDto
+                        {
+                            Id = o.Customer.Id,
+                            UserId = o.Customer.UserId,
+                            FullName = o.Customer.FullName,
+                            Phone = o.Customer.Phone,
+                            DateOfBirth = o.Customer.DateOfBirth,
+                            UserEmail = o.Customer.User != null ? o.Customer.User.Email : null,
+                            UserName = o.Customer.User != null ? o.Customer.User.Name : null
+                        } : null,
                         Address = o.Address != null ? new AddressInfo
                         {
                             FullName = o.Address.FullName,
@@ -116,8 +135,8 @@ namespace EcommerceApi.Controllers
                             PostalCode = o.Address.PostalCode,
                             Country = o.Address.Country,
                             Phone = o.Address.Phone
-                        } : null,  
-                                        
+                        } : null,
+
                         Items = o.Items != null ? o.Items.Select(item => new OrderItemInfo
                         {
                             Id = item.Id,
@@ -126,7 +145,7 @@ namespace EcommerceApi.Controllers
                             ProductName = item.Variant != null && item.Variant.Product != null ? item.Variant.Product.Name : null,
                             Quantity = item.Quantity,
                             Price = item.Price
-                        }).ToList() : null, 
+                        }).ToList() : null,
                         Payments = o.Payments != null
                         ? o.Payments.Select(p => new PaymentInfo
                         {
@@ -157,16 +176,16 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Validate user exists
-                var userExists = await _context.Users.AnyAsync(u => u.Id == createDto.UserId);
-                if (!userExists)
-                    return BadRequest(new { message = "User not found" });
+                // Validate customer exists
+                var customerExists = await _context.Customers.AnyAsync(c => c.Id == createDto.CustomerId);
+                if (!customerExists)
+                    return BadRequest(new { message = "Customer not found" });
 
-                // Validate address exists and belongs to user
+                // Validate address exists and belongs to customer
                 var address = await _context.Addresses
-                    .FirstOrDefaultAsync(a => a.Id == createDto.AddressId && a.UserId == createDto.UserId);
+                    .FirstOrDefaultAsync(a => a.Id == createDto.AddressId && a.CustomerId == createDto.CustomerId);
                 if (address == null)
-                    return BadRequest(new { message = "Address not found or does not belong to the user" });
+                    return BadRequest(new { message = "Address not found or does not belong to the customer" });
 
                 // Validate all variants exist and have sufficient stock
                 var variantIds = createDto.Items.Select(i => i.VariantId).ToList();
@@ -210,7 +229,7 @@ namespace EcommerceApi.Controllers
                 var order = new Models.Order
                 {
                     Id = Guid.NewGuid(),
-                    UserId = createDto.UserId,
+                    CustomerId = createDto.CustomerId,
                     AddressId = createDto.AddressId,
                     Status = "pending",
                     TotalAmount = totalAmount,
@@ -244,14 +263,42 @@ namespace EcommerceApi.Controllers
 
                 await _context.SaveChangesAsync();
 
+                // Fetch the full order with customer details
+                var createdOrder = await _context.Orders
+                    .Where(o => o.Id == order.Id)
+                    .Include(o => o.Customer)
+                    .ThenInclude(c => c.User)
+                    .Include(o => o.Address)
+                    .FirstOrDefaultAsync();
+
                 var orderDto = new OrderDto
                 {
-                    Id = order.Id,
-                    UserId = order.UserId,
-                    AddressId = order.AddressId,
-                    Status = order.Status,
-                    TotalAmount = order.TotalAmount,
-                    CreatedAt = order.CreatedAt
+                    Id = createdOrder.Id,
+                    CustomerId = createdOrder.CustomerId,
+                    AddressId = createdOrder.AddressId,
+                    Status = createdOrder.Status,
+                    TotalAmount = createdOrder.TotalAmount,
+                    CreatedAt = createdOrder.CreatedAt,
+                    Customer = createdOrder.Customer != null ? new CustomerDto
+                    {
+                        Id = createdOrder.Customer.Id,
+                        UserId = createdOrder.Customer.UserId,
+                        FullName = createdOrder.Customer.FullName,
+                        Phone = createdOrder.Customer.Phone,
+                        DateOfBirth = createdOrder.Customer.DateOfBirth,
+                        UserEmail = createdOrder.Customer.User != null ? createdOrder.Customer.User.Email : null,
+                        UserName = createdOrder.Customer.User != null ? createdOrder.Customer.User.Name : null
+                    } : null,
+                    Address = createdOrder.Address != null ? new AddressInfo
+                    {
+                        FullName = createdOrder.Address.FullName,
+                        Line1 = createdOrder.Address.Line1,
+                        Line2 = createdOrder.Address.Line2,
+                        City = createdOrder.Address.City,
+                        PostalCode = createdOrder.Address.PostalCode,
+                        Country = createdOrder.Address.Country,
+                        Phone = createdOrder.Address.Phone
+                    } : null
                 };
 
                 return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, orderDto);
@@ -318,7 +365,7 @@ namespace EcommerceApi.Controllers
                 var orderDto = new OrderDto
                 {
                     Id = order.Id,
-                    UserId = order.UserId,
+                    CustomerId = order.CustomerId,
                     AddressId = order.AddressId,
                     Status = order.Status,
                     TotalAmount = order.TotalAmount,

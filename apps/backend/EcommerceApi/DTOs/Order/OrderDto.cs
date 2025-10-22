@@ -1,17 +1,24 @@
+using EcommerceApi.DTOs.Customer;
+
 namespace EcommerceApi.DTOs.Order
 {
     public class OrderDto
     {
         public Guid Id { get; set; }
-        public Guid UserId { get; set; }
+        public Guid CustomerId { get; set; }
         public Guid AddressId { get; set; }
         public string Status { get; set; } = string.Empty;
         public decimal TotalAmount { get; set; }
         public DateTime CreatedAt { get; set; }
-        public string? UserName { get; set; }
-        public AddressInfo? Address { get; set; }
-        public List<OrderItemInfo>? Items { get; set; }
 
+        // Full nested customer object
+        public CustomerDto? Customer { get; set; }
+
+        // Address info (snapshot at order time)
+        public AddressInfo? Address { get; set; }
+
+        // Order items and payments
+        public List<OrderItemInfo>? Items { get; set; }
         public List<PaymentInfo>? Payments { get; set; }
     }
 

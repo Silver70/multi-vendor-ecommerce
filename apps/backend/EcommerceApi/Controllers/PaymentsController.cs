@@ -63,7 +63,7 @@ namespace EcommerceApi.Controllers
                         TransactionId = p.TransactionId,
                         Amount = p.Amount,
                         CreatedAt = p.CreatedAt,
-                        OrderUserName = p.Order != null && p.Order.User != null ? p.Order.User.Name : null,
+                        OrderUserName = p.Order != null && p.Order.Customer != null ? p.Order.Customer.FullName : null,
                         OrderTotalAmount = p.Order != null ? p.Order.TotalAmount : null
                     })
                     .ToListAsync();
@@ -101,7 +101,7 @@ namespace EcommerceApi.Controllers
                         TransactionId = p.TransactionId,
                         Amount = p.Amount,
                         CreatedAt = p.CreatedAt,
-                        OrderUserName = p.Order != null && p.Order.User != null ? p.Order.User.Name : null,
+                        OrderUserName = p.Order != null && p.Order.Customer != null ? p.Order.Customer.FullName : null,
                         OrderTotalAmount = p.Order != null ? p.Order.TotalAmount : null
                     })
                     .FirstOrDefaultAsync();

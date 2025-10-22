@@ -27,8 +27,8 @@ namespace EcommerceApi.Controllers
             {
                 var query = _context.Addresses.AsQueryable();
 
-                if (filterParams.UserId.HasValue)
-                    query = query.Where(a => a.UserId == filterParams.UserId.Value);
+                if (filterParams.CustomerId.HasValue)
+                    query = query.Where(a => a.CustomerId == filterParams.CustomerId.Value);
 
                 if (!string.IsNullOrWhiteSpace(filterParams.City))
                     query = query.Where(a => a.City.Contains(filterParams.City));
@@ -45,7 +45,7 @@ namespace EcommerceApi.Controllers
                     .Select(a => new AddressDto
                     {
                         Id = a.Id,
-                        UserId = a.UserId,
+                        CustomerId = a.CustomerId,
                         FullName = a.FullName,
                         Line1 = a.Line1,
                         Line2 = a.Line2,
@@ -53,7 +53,7 @@ namespace EcommerceApi.Controllers
                         PostalCode = a.PostalCode,
                         Country = a.Country,
                         Phone = a.Phone,
-                        UserName = a.User != null ? a.User.Name : null
+                        CustomerName = a.Customer != null ? a.Customer.FullName : null
                     })
                     .ToListAsync();
 
@@ -84,7 +84,7 @@ namespace EcommerceApi.Controllers
                     .Select(a => new AddressDto
                     {
                         Id = a.Id,
-                        UserId = a.UserId,
+                        CustomerId = a.CustomerId,
                         FullName = a.FullName,
                         Line1 = a.Line1,
                         Line2 = a.Line2,
@@ -92,7 +92,7 @@ namespace EcommerceApi.Controllers
                         PostalCode = a.PostalCode,
                         Country = a.Country,
                         Phone = a.Phone,
-                        UserName = a.User != null ? a.User.Name : null
+                        CustomerName = a.Customer != null ? a.Customer.FullName : null
                     })
                     .FirstOrDefaultAsync();
 
@@ -115,14 +115,14 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                var userExists = await _context.Users.AnyAsync(u => u.Id == createDto.UserId);
-                if (!userExists)
-                    return BadRequest(new { message = "User not found" });
+                var customerExists = await _context.Customers.AnyAsync(c => c.Id == createDto.CustomerId);
+                if (!customerExists)
+                    return BadRequest(new { message = "Customer not found" });
 
                 var address = new Models.Address
                 {
                     Id = Guid.NewGuid(),
-                    UserId = createDto.UserId,
+                    CustomerId = createDto.CustomerId,
                     FullName = createDto.FullName,
                     Line1 = createDto.Line1,
                     Line2 = createDto.Line2,
@@ -138,7 +138,7 @@ namespace EcommerceApi.Controllers
                 var addressDto = new AddressDto
                 {
                     Id = address.Id,
-                    UserId = address.UserId,
+                    CustomerId = address.CustomerId,
                     FullName = address.FullName,
                     Line1 = address.Line1,
                     Line2 = address.Line2,
@@ -181,7 +181,7 @@ namespace EcommerceApi.Controllers
                 var addressDto = new AddressDto
                 {
                     Id = address.Id,
-                    UserId = address.UserId,
+                    CustomerId = address.CustomerId,
                     FullName = address.FullName,
                     Line1 = address.Line1,
                     Line2 = address.Line2,

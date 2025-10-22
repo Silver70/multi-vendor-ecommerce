@@ -4,8 +4,8 @@ namespace EcommerceApi.DTOs.Address
 {
     public class CreateAddressDto
     {
-        [Required(ErrorMessage = "User ID is required")]
-        public Guid UserId { get; set; }
+        [Required(ErrorMessage = "Customer ID is required")]
+        public Guid CustomerId { get; set; }
 
         [Required(ErrorMessage = "Full name is required")]
         [MaxLength(100, ErrorMessage = "Full name cannot exceed 100 characters")]

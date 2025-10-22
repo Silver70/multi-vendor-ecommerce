@@ -4,8 +4,8 @@ namespace EcommerceApi.DTOs.Order
 {
     public class CreateOrderDto
     {
-        [Required(ErrorMessage = "User ID is required")]
-        public Guid UserId { get; set; }
+        [Required(ErrorMessage = "Customer ID is required")]
+        public Guid CustomerId { get; set; }
 
         [Required(ErrorMessage = "Address ID is required")]
         public Guid AddressId { get; set; }

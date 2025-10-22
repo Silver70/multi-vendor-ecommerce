@@ -25,8 +25,7 @@ namespace EcommerceApi.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation
-        public ICollection<Address>? Addresses { get; set; }
-        public ICollection<Order>? Orders { get; set; }
         public ICollection<Review>? Reviews { get; set; }
+        public Customer? Customer { get; set; }
     }
 }

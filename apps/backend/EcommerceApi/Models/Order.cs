@@ -6,7 +6,7 @@ namespace EcommerceApi.Models
     {
         public Guid Id { get; set; }
 
-        public Guid UserId { get; set; }
+        public Guid CustomerId { get; set; }
         public Guid AddressId { get; set; }
 
         [Required]
@@ -17,7 +17,7 @@ namespace EcommerceApi.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation
-        public User? User { get; set; }
+        public Customer? Customer { get; set; }
         public Address? Address { get; set; }
         public ICollection<OrderItem>? Items { get; set; }
         public ICollection<Payment>? Payments { get; set; }

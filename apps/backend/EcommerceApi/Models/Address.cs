@@ -7,7 +7,7 @@ namespace EcommerceApi.Models
         public Guid Id { get; set; }
 
         [Required]
-        public Guid UserId { get; set; }
+        public Guid CustomerId { get; set; }
 
         [Required, MaxLength(100)]
         public string FullName { get; set; } = string.Empty;
@@ -30,6 +30,6 @@ namespace EcommerceApi.Models
         public string? Phone { get; set; }
 
         // Navigation
-        public User? User { get; set; }
+        public Customer? Customer { get; set; }
     }
 }
