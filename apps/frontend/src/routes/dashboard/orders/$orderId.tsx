@@ -121,9 +121,21 @@ function RouteComponent() {
               <h3 className="text-sm font-semibold text-muted-foreground mb-2">
                 CUSTOMER
               </h3>
-              <p className="text-sm font-medium">
-                {orderResponse.address?.fullName || orderResponse.userName}
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">
+                  {orderResponse.customer?.fullName || orderResponse.address?.fullName || "N/A"}
+                </p>
+                {orderResponse.customer?.userEmail && (
+                  <p className="text-xs text-muted-foreground">
+                    {orderResponse.customer.userEmail}
+                  </p>
+                )}
+                {orderResponse.customer?.phone && (
+                  <p className="text-xs text-muted-foreground">
+                    {orderResponse.customer.phone}
+                  </p>
+                )}
+              </div>
             </div>
             <div>
               <h3 className="text-sm font-semibold text-muted-foreground mb-2">
@@ -222,8 +234,9 @@ function RouteComponent() {
             <h3 className="text-sm font-semibold text-muted-foreground mb-2">
               PAYMENT METHOD
             </h3>
-            {/* @ts-ignore */}
-            <p>{orderResponse.payments?.[0].method}</p>
+            <p className="text-sm capitalize">
+              {orderResponse.payments?.[0]?.method || "Not paid"}
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -95,7 +95,7 @@ function RouteComponent() {
       },
     },
     {
-      accessorKey: "userName",
+      id: "customer",
       header: ({ column }) => {
         return (
           <Button
@@ -107,9 +107,19 @@ function RouteComponent() {
           </Button>
         );
       },
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("userName") || "N/A"}</div>
-      ),
+      cell: ({ row }) => {
+        const customer = row.original.customer;
+        return (
+          <div>
+            <div className="font-medium">{customer?.fullName || "N/A"}</div>
+            {customer?.userEmail && (
+              <div className="text-xs text-muted-foreground">
+                {customer.userEmail}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "status",
@@ -239,8 +249,10 @@ function RouteComponent() {
   const filteredOrders = orders.filter((order: Order) => {
     const matchesSearch =
       order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (order.userName &&
-        order.userName.toLowerCase().includes(searchQuery.toLowerCase()));
+      (order.customer?.fullName &&
+        order.customer.fullName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (order.customer?.userEmail &&
+        order.customer.userEmail.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus =
       selectedStatuses.length === 0 || selectedStatuses.includes(order.status);
     return matchesSearch && matchesStatus;
@@ -261,7 +273,7 @@ function RouteComponent() {
         <div className="flex-1 max-w-sm relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search orders by ID or customer..."
+            placeholder="Search by ID, customer name, or email..."
             value={searchQuery}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setSearchQuery(e.target.value)

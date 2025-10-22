@@ -15,6 +15,16 @@ export interface PagedResult<T> {
   hasNextPage: boolean;
 }
 
+export interface CustomerDto {
+  id: string;
+  userId: string;
+  fullName: string;
+  phone?: string;
+  dateOfBirth?: string;
+  userEmail?: string;
+  userName?: string;
+}
+
 export interface AddressInfo {
   fullName: string;
   line1: string;
@@ -23,6 +33,12 @@ export interface AddressInfo {
   postalCode?: string;
   country: string;
   phone?: string;
+}
+
+export interface PaymentInfo {
+  id: string;
+  orderId: string;
+  method: string;
 }
 
 export interface OrderItemInfo {
@@ -37,14 +53,15 @@ export interface OrderItemInfo {
 
 export interface Order {
   id: string;
-  userId: string;
+  customerId: string;
   addressId: string;
   status: string;
   totalAmount: number;
   createdAt: string;
-  userName?: string;
+  customer?: CustomerDto;
   address?: AddressInfo;
   items?: OrderItemInfo[];
+  payments?: PaymentInfo[];
 }
 
 export interface CreateOrderItemDto {
@@ -53,7 +70,7 @@ export interface CreateOrderItemDto {
 }
 
 export interface CreateOrderDto {
-  userId: string;
+  customerId: string;
   addressId: string;
   items: CreateOrderItemDto[];
 }
