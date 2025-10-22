@@ -7,6 +7,7 @@ import {
   MoreHorizontal,
   Plus,
   Search,
+  AlertCircle,
 } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
@@ -21,9 +22,10 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { DataTable } from "~/components/data-table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Product } from "~/types/product";
-import { getProductsQueryOptions } from "~/lib/productFn";
-import { useQuery } from "@tanstack/react-query";
+import { getProductsQueryOptions, deleteProduct } from "~/lib/productFn";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/inventory/products/")({
   component: RouteComponent,
@@ -35,12 +37,26 @@ export const Route = createFileRoute("/dashboard/inventory/products/")({
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    productId: string;
+    productName: string;
+  } | null>(null);
+
   const { data: productsResponse, isLoading } = useQuery(
     getProductsQueryOptions
   );
+
+  const deleteProductMutation = useMutation({
+    mutationFn: (productId: string) => deleteProduct({ data: productId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setDeleteConfirmation(null);
+    },
+  });
 
   const products = productsResponse?.items || [];
 
@@ -138,7 +154,15 @@ function RouteComponent() {
               >
                 View details
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() =>
+                  setDeleteConfirmation({
+                    productId: product.id,
+                    productName: product.name,
+                  })
+                }
+              >
                 Delete product
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -271,6 +295,51 @@ function RouteComponent() {
 
       {/* Products Table */}
       <DataTable columns={columns} data={filteredProducts} />
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirmation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <CardTitle className="text-red-600">Delete Product</CardTitle>
+              </div>
+              <CardDescription className="mt-2">
+                Are you sure you want to delete "{deleteConfirmation.productName}"?
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-6">
+                This action cannot be undone. The product and all its variants will be permanently removed from the system.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteConfirmation(null)}
+                  disabled={deleteProductMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() =>
+                    deleteProductMutation.mutate(deleteConfirmation.productId)
+                  }
+                  disabled={deleteProductMutation.isPending}
+                >
+                  {deleteProductMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
+              </div>
+              {deleteProductMutation.isError && (
+                <div className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+                  Error deleting product. Please try again or check if the product has associated orders.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
