@@ -193,15 +193,94 @@ namespace EcommerceApi.Services
         }
 
         /// <summary>
-        /// Delete all variants for a product
+        /// Delete all variants and their custom attributes for a product
         /// </summary>
         public async Task DeleteProductVariantsAsync(Guid productId)
         {
+            // First, identify custom attributes before deleting variants
+            await DeleteProductCustomAttributesAsync(productId);
+
+            // Get all variant IDs for this product
+            var variantIds = await _context.ProductVariants
+                .Where(v => v.ProductId == productId)
+                .Select(v => v.Id)
+                .ToListAsync();
+
+            if (variantIds.Count == 0)
+            {
+                return;
+            }
+
+            // Delete VariantAttributeValue records first (they reference variants)
+            var variantAttributeValues = await _context.VariantAttributeValues
+                .Where(vav => variantIds.Contains(vav.VariantId))
+                .ToListAsync();
+
+            _context.VariantAttributeValues.RemoveRange(variantAttributeValues);
+            await _context.SaveChangesAsync();
+
+            // Now delete the variants themselves
             var variants = await _context.ProductVariants
                 .Where(v => v.ProductId == productId)
                 .ToListAsync();
 
             _context.ProductVariants.RemoveRange(variants);
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Delete custom attributes that are only used by this product
+        /// A custom attribute is one that is only referenced by variants of this product
+        /// </summary>
+        private async Task DeleteProductCustomAttributesAsync(Guid productId)
+        {
+            // Get all ProductAttributeValue IDs that are used by this product's variants
+            var attributeValueIdsUsedByProduct = await _context.VariantAttributeValues
+                .Where(vav => vav.Variant.ProductId == productId)
+                .Select(vav => vav.AttributeValueId)
+                .Distinct()
+                .ToListAsync();
+
+            if (attributeValueIdsUsedByProduct.Count == 0)
+            {
+                return;
+            }
+
+            // Get the unique AttributeIds from these values
+            var attributeIdsUsedByProduct = await _context.ProductAttributeValues
+                .Where(pav => attributeValueIdsUsedByProduct.Contains(pav.Id))
+                .Select(pav => pav.AttributeId)
+                .Distinct()
+                .ToListAsync();
+
+            if (attributeIdsUsedByProduct.Count == 0)
+            {
+                return;
+            }
+
+            // For each attribute, check if it's used by other products
+            foreach (var attributeId in attributeIdsUsedByProduct)
+            {
+                // Count how many other products use this attribute
+                var usedByOtherProducts = await _context.VariantAttributeValues
+                    .Where(vav => vav.AttributeValue.AttributeId == attributeId &&
+                                  vav.Variant.ProductId != productId)
+                    .AnyAsync();
+
+                // If not used by other products, it's a custom attribute - delete it
+                if (!usedByOtherProducts)
+                {
+                    var attributeToDelete = await _context.ProductAttributes
+                        .Include(a => a.Values)
+                        .FirstOrDefaultAsync(a => a.Id == attributeId);
+
+                    if (attributeToDelete != null)
+                    {
+                        _context.ProductAttributes.Remove(attributeToDelete);
+                    }
+                }
+            }
+
             await _context.SaveChangesAsync();
         }
     }

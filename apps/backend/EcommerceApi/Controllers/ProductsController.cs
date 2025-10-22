@@ -592,6 +592,7 @@ namespace EcommerceApi.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> DeleteProduct(Guid id)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 var product = await _context.Products
@@ -617,13 +618,20 @@ namespace EcommerceApi.Controllers
                     }
                 }
 
+                // Delete all variants and their custom attributes
+                await _variantService.DeleteProductVariantsAsync(id);
+
+                // Delete the product
                 _context.Products.Remove(product);
                 await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
 
                 return NoContent();
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error deleting product {ProductId}", id);
                 return StatusCode(500, new { message = "An error occurred while deleting the product" });
             }
