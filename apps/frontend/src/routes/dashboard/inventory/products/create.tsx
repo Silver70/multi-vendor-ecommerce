@@ -27,8 +27,10 @@ import { getCategoriesQueryOptions } from "~/lib/categoryFn";
 import { getVendorsQueryOptions } from "~/lib/vendorFn";
 import {
   createCompositeProduct,
+  getGlobalAttributesQueryOptions,
   type CreateCompositeProductDto,
   type VariantInput,
+  type GlobalAttribute,
 } from "~/lib/productFn";
 
 export const Route = createFileRoute("/dashboard/inventory/products/create")({
@@ -37,6 +39,7 @@ export const Route = createFileRoute("/dashboard/inventory/products/create")({
     const { queryClient } = context;
     queryClient.prefetchQuery(getCategoriesQueryOptions);
     queryClient.prefetchQuery(getVendorsQueryOptions);
+    queryClient.prefetchQuery(getGlobalAttributesQueryOptions);
   },
 });
 
@@ -57,9 +60,11 @@ function RouteComponent() {
 
   const { data: categoriesResponse } = useQuery(getCategoriesQueryOptions);
   const { data: vendorsResponse } = useQuery(getVendorsQueryOptions);
+  const { data: globalAttributes } = useQuery(getGlobalAttributesQueryOptions);
 
   const categories = categoriesResponse?.items || [];
   const vendors = vendorsResponse?.items || [];
+  const availableGlobalAttributes = globalAttributes || [];
 
   // Product Info State
   const [productName, setProductName] = useState("");
@@ -88,18 +93,51 @@ function RouteComponent() {
     },
   });
 
+  // Check if attribute already exists (case-insensitive)
+  const attributeExists = (name: string) => {
+    return attributes.some(
+      (attr) => attr.name.toLowerCase() === name.toLowerCase()
+    );
+  };
+
   // Add new attribute
   const addAttribute = () => {
     if (!newAttributeName.trim()) return;
 
+    const trimmedName = newAttributeName.trim();
+
+    // Check for duplicate
+    if (attributeExists(trimmedName)) {
+      return;
+    }
+
     const newAttr: Attribute = {
       id: Math.random().toString(36).substring(2, 11),
-      name: newAttributeName.trim(),
+      name: trimmedName,
       values: [],
     };
 
     setAttributes([...attributes, newAttr]);
     setNewAttributeName("");
+  };
+
+  // Add global attribute to selected attributes
+  const addGlobalAttribute = (globalAttr: GlobalAttribute) => {
+    // Check if already added
+    if (attributeExists(globalAttr.name)) {
+      return;
+    }
+
+    const newAttr: Attribute = {
+      id: Math.random().toString(36).substring(2, 11),
+      name: globalAttr.name,
+      values: globalAttr.values.map((v) => ({
+        id: v.id,
+        value: v.value,
+      })),
+    };
+
+    setAttributes([...attributes, newAttr]);
   };
 
   // Remove attribute
@@ -184,8 +222,8 @@ function RouteComponent() {
     }));
 
     setVariants(newVariants);
-    generateVariants();
   };
+  
 
   // Update variant
   const updateVariant = (
@@ -353,107 +391,166 @@ function RouteComponent() {
           <CardHeader>
             <CardTitle>Product Attributes</CardTitle>
             <CardDescription>
-              Define product attributes like Size, Color, etc.
+              Use global attributes or define custom ones
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Add New Attribute */}
-            <div className="flex gap-2">
-              <Input
-                placeholder="Attribute name (e.g., Color, Size)"
-                value={newAttributeName}
-                onChange={(e) => setNewAttributeName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addAttribute();
-                  }
-                }}
-              />
-              <Button type="button" onClick={addAttribute} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Attribute
-              </Button>
+            {/* Available Global Attributes */}
+            {availableGlobalAttributes.length > 0 && (
+              <div className="space-y-3 border rounded-lg p-4 bg-blue-50">
+                <h4 className="font-semibold text-sm text-blue-900">
+                  Available Global Attributes
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {availableGlobalAttributes
+                    .filter((ga) => !attributeExists(ga.name))
+                    .map((globalAttr) => (
+                      <Button
+                        key={globalAttr.id}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addGlobalAttribute(globalAttr)}
+                        className="bg-white hover:bg-blue-100"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        {globalAttr.name}
+                      </Button>
+                    ))}
+                </div>
+                {availableGlobalAttributes.every((ga) =>
+                  attributeExists(ga.name)
+                ) && (
+                  <p className="text-xs text-blue-700">
+                    All global attributes already added
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Add Custom Attribute */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Create Custom Attribute</label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Attribute name (e.g., Material, Brand)"
+                  value={newAttributeName}
+                  onChange={(e) => setNewAttributeName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addAttribute();
+                    }
+                  }}
+                />
+                <Button type="button" onClick={addAttribute} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Custom
+                </Button>
+              </div>
             </div>
 
             {/* Attributes List */}
             {attributes.length > 0 && (
               <div className="space-y-4">
-                {attributes.map((attr) => (
-                  <Card key={attr.id} className="border-2">
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h4 className="font-semibold text-lg">{attr.name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {attr.values.length} value(s)
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeAttribute(attr.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
+                {attributes.map((attr) => {
+                  const isGlobal = availableGlobalAttributes.some(
+                    (ga) => ga.name.toLowerCase() === attr.name.toLowerCase()
+                  );
 
-                      {/* Attribute Values */}
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {attr.values.map((val) => (
-                          <Badge
-                            key={val.id}
-                            variant="secondary"
-                            className="pl-3 pr-1"
+                  return (
+                    <Card key={attr.id} className="border-2">
+                      <CardContent className="pt-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-semibold text-lg">
+                                {attr.name}
+                              </h4>
+                              {isGlobal && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Global
+                                </Badge>
+                              )}
+                              {!isGlobal && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs bg-orange-50"
+                                >
+                                  Custom
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {attr.values.length} value(s)
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeAttribute(attr.id)}
                           >
-                            {val.value}
-                            <button
-                              type="button"
-                              onClick={() =>
-                                removeValueFromAttribute(attr.id, val.id)
-                              }
-                              className="ml-2 hover:text-red-500"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
 
-                      {/* Add Value Input */}
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder={`Add ${attr.name.toLowerCase()} value`}
-                          value={
-                            attr.id === attributes[attributes.length - 1]?.id
-                              ? newAttributeValue
-                              : ""
-                          }
-                          onChange={(e) => setNewAttributeValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
+                        {/* Attribute Values */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {attr.values.map((val) => (
+                            <Badge
+                              key={val.id}
+                              variant="secondary"
+                              className="pl-3 pr-1"
+                            >
+                              {val.value}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  removeValueFromAttribute(attr.id, val.id)
+                                }
+                                className="ml-2 hover:text-red-500"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+
+                        {/* Add Value Input */}
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder={`Add ${attr.name.toLowerCase()} value`}
+                            value={
+                              attr.id === attributes[attributes.length - 1]?.id
+                                ? newAttributeValue
+                                : ""
+                            }
+                            onChange={(e) => setNewAttributeValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addValueToAttribute(attr.id, newAttributeValue);
+                                setNewAttributeValue("");
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
                               addValueToAttribute(attr.id, newAttributeValue);
                               setNewAttributeValue("");
-                            }
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            addValueToAttribute(attr.id, newAttributeValue);
-                            setNewAttributeValue("");
-                          }}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                            }}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
 

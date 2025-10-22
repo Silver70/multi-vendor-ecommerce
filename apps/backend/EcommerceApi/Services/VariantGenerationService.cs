@@ -50,9 +50,8 @@ namespace EcommerceApi.Services
 
             foreach (var attrInput in attributesInput)
             {
-                // Check if attribute exists in global pool
+                // Check if attribute exists in global pool (without loading all values yet)
                 var existingAttribute = await _context.ProductAttributes
-                    .Include(a => a.Values)
                     .FirstOrDefaultAsync(a => a.Name.ToLower() == attrInput.Name.ToLower());
 
                 ProductAttribute attribute;
@@ -72,13 +71,15 @@ namespace EcommerceApi.Services
                         Values = new List<ProductAttributeValue>()
                     };
                     _context.ProductAttributes.Add(attribute);
+                    await _context.SaveChangesAsync();
                 }
 
                 // Process values
                 foreach (var valueStr in attrInput.Values)
                 {
-                    var existingValue = attribute.Values
-                        .FirstOrDefault(v => v.Value.ToLower() == valueStr.ToLower());
+                    // Check if value exists for this attribute
+                    var existingValue = await _context.ProductAttributeValues
+                        .FirstOrDefaultAsync(v => v.AttributeId == attribute.Id && v.Value.ToLower() == valueStr.ToLower());
 
                     Guid valueId;
 
@@ -93,10 +94,10 @@ namespace EcommerceApi.Services
                         {
                             Id = Guid.NewGuid(),
                             AttributeId = attribute.Id,
-                            Value = valueStr,
-                            Attribute = attribute
+                            Value = valueStr
                         };
-                        attribute.Values.Add(newValue);
+                        _context.ProductAttributeValues.Add(newValue);
+                        await _context.SaveChangesAsync();
                         valueId = newValue.Id;
                     }
 
@@ -105,7 +106,6 @@ namespace EcommerceApi.Services
                 }
             }
 
-            await _context.SaveChangesAsync();
             return attributeValueMap;
         }
 

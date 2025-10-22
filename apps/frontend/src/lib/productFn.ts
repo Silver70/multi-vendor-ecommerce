@@ -141,7 +141,7 @@ export const createProduct = createServerFn({ method: "POST" })
   .inputValidator((d: CreateProductDto) => d)
   .handler(async ({ data }) => {
     const response = await axios.post<Product>(
-      `${API_BASE_URL}/api/Products`,
+      `${API_BASE_URL}/api/Products/composite`,
       data
     );
     return response.data;
@@ -176,3 +176,29 @@ export const createCompositeProduct = createServerFn({ method: "POST" })
     );
     return response.data;
   });
+
+// Get all global attributes
+export interface GlobalAttributeValue {
+  id: string;
+  value: string;
+}
+
+export interface GlobalAttribute {
+  id: string;
+  name: string;
+  values: GlobalAttributeValue[];
+}
+
+export const getGlobalAttributes = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const response = await axios.get<GlobalAttribute[]>(
+      `${API_BASE_URL}/api/Attributes`
+    );
+    return response.data;
+  }
+);
+
+export const getGlobalAttributesQueryOptions = queryOptions({
+  queryKey: ["globalAttributes"],
+  queryFn: () => getGlobalAttributes(),
+});
