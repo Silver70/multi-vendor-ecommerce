@@ -67,8 +67,6 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 var app = builder.Build();
 
 // Seed database if in development mode and SEED_DATABASE environment variable is set
-// Commented out - DatabaseSeeder has been temporarily disabled during migration to Customer model
-/*
 if (app.Environment.IsDevelopment())
 {
     var seedDatabase = builder.Configuration.GetValue<bool>("SeedDatabase");
@@ -89,7 +87,6 @@ if (app.Environment.IsDevelopment())
         }
     }
 }
-*/
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
