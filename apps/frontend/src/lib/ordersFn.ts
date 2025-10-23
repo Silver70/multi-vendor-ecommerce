@@ -17,12 +17,14 @@ export interface PagedResult<T> {
 
 export interface CustomerDto {
   id: string;
-  userId: string;
+  createdByUserId?: string | null;
   fullName: string;
+  email?: string;
   phone?: string;
   dateOfBirth?: string;
-  userEmail?: string;
-  userName?: string;
+  isFromWebsite: boolean;
+  createdAt: string;
+  createdByUserName?: string;
 }
 
 export interface AddressInfo {

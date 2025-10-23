@@ -6,29 +6,28 @@ const API_BASE_URL = "http://localhost:5176";
 
 export interface CustomerDto {
   id: string;
-  userId: string;
+  createdByUserId?: string | null;
   fullName: string;
+  email?: string;
   phone?: string;
   dateOfBirth?: string;
-  userEmail?: string;
-  userName?: string;
+  isFromWebsite: boolean;
+  createdAt: string;
+  createdByUserName?: string;
 }
 
 export interface CreateCustomerDto {
-  userId: string;
   fullName: string;
+  email?: string;
   phone?: string;
   dateOfBirth?: string;
 }
 
 export interface UpdateCustomerDto {
   fullName: string;
+  email?: string;
   phone?: string;
   dateOfBirth?: string;
-}
-
-export interface CreateOrGetCustomerDto {
-  userId: string;
 }
 
 // Get customer by ID
@@ -48,40 +47,29 @@ export const getCustomerQueryOptions = (id: string) =>
     enabled: !!id,
   });
 
-// Get customer by User ID
-export const getCustomerByUserId = createServerFn({ method: "GET" })
+// Get customer by Email
+export const getCustomerByEmail = createServerFn({ method: "GET" })
   .inputValidator((d: string) => d)
   .handler(async ({ data }) => {
     const response = await axios.get<CustomerDto>(
-      `${API_BASE_URL}/api/Customers/by-user/${data}`
+      `${API_BASE_URL}/api/Customers/by-email/${data}`
     );
     return response.data;
   });
 
-export const getCustomerByUserIdQueryOptions = (userId: string) =>
+export const getCustomerByEmailQueryOptions = (email: string) =>
   queryOptions({
-    queryKey: ["customers", "by-user", userId],
-    queryFn: () => getCustomerByUserId({ data: userId }),
-    enabled: !!userId,
+    queryKey: ["customers", "by-email", email],
+    queryFn: () => getCustomerByEmail({ data: email }),
+    enabled: !!email,
   });
 
-// Create customer with full profile
+// Create customer (admin-created)
 export const createCustomer = createServerFn({ method: "POST" })
   .inputValidator((d: CreateCustomerDto) => d)
   .handler(async ({ data }) => {
     const response = await axios.post<CustomerDto>(
       `${API_BASE_URL}/api/Customers`,
-      data
-    );
-    return response.data;
-  });
-
-// Create or get customer (on-demand creation)
-export const createOrGetCustomer = createServerFn({ method: "POST" })
-  .inputValidator((d: CreateOrGetCustomerDto) => d)
-  .handler(async ({ data }) => {
-    const response = await axios.post<CustomerDto>(
-      `${API_BASE_URL}/api/Customers/create-or-get`,
       data
     );
     return response.data;

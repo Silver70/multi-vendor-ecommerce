@@ -45,7 +45,7 @@ export function CustomerSearchSelect({
   const customers = customersData?.items || []
 
   const displayText = value
-    ? `${value.fullName} (${value.userEmail || "No email"})`
+    ? `${value.fullName} (${value.email || "No email"})`
     : `+ ${label}`
 
   const CustomerList = () => (
@@ -71,7 +71,7 @@ export function CustomerSearchSelect({
                 <div className="flex flex-col gap-1 flex-1">
                   <span className="font-medium">{customer.fullName}</span>
                   <span className="text-xs text-muted-foreground">
-                    {customer.userEmail || "No email"}
+                    {customer.email || "No email"}
                   </span>
                 </div>
               </CommandItem>

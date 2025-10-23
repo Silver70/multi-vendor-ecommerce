@@ -117,7 +117,7 @@ function RouteComponent() {
                   <div className="p-3 bg-muted rounded-md text-sm space-y-1">
                     <div>
                       <span className="text-muted-foreground">Email:</span>
-                      <div className="font-medium">{selectedCustomer.userEmail}</div>
+                      <div className="font-medium">{selectedCustomer.email || "No email"}</div>
                     </div>
                     {selectedCustomer.phone && (
                       <div>
@@ -125,6 +125,10 @@ function RouteComponent() {
                         <div className="font-medium">{selectedCustomer.phone}</div>
                       </div>
                     )}
+                    <div className="text-xs pt-2 border-t">
+                      <span className="text-muted-foreground">Created:</span>
+                      <div>{new Date(selectedCustomer.createdAt).toLocaleDateString()}</div>
+                    </div>
                   </div>
                 )}
               </CardContent>

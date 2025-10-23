@@ -112,9 +112,9 @@ function RouteComponent() {
         return (
           <div>
             <div className="font-medium">{customer?.fullName || "N/A"}</div>
-            {customer?.userEmail && (
+            {customer?.email && (
               <div className="text-xs text-muted-foreground">
-                {customer.userEmail}
+                {customer.email}
               </div>
             )}
           </div>
@@ -251,8 +251,8 @@ function RouteComponent() {
       order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (order.customer?.fullName &&
         order.customer.fullName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (order.customer?.userEmail &&
-        order.customer.userEmail.toLowerCase().includes(searchQuery.toLowerCase()));
+      (order.customer?.email &&
+        order.customer.email.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus =
       selectedStatuses.length === 0 || selectedStatuses.includes(order.status);
     return matchesSearch && matchesStatus;

@@ -125,9 +125,9 @@ function RouteComponent() {
                 <p className="text-sm font-medium">
                   {orderResponse.customer?.fullName || orderResponse.address?.fullName || "N/A"}
                 </p>
-                {orderResponse.customer?.userEmail && (
+                {orderResponse.customer?.email && (
                   <p className="text-xs text-muted-foreground">
-                    {orderResponse.customer.userEmail}
+                    {orderResponse.customer.email}
                   </p>
                 )}
                 {orderResponse.customer?.phone && (
