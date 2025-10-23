@@ -59,12 +59,19 @@ export function AddressSelect({
       ? getCustomerAddressesQueryOptions(customerId)
       : {
           queryKey: ["addresses", "null"],
-          queryFn: async () => ({ items: [] } as any),
+          queryFn: async () => ({ items: [] }) as any,
           enabled: false,
         }
   );
 
   const addresses = addressesData?.items || [];
+
+  // Auto-select single address when customer is selected
+  React.useEffect(() => {
+    if (customerId && addresses.length === 1 && !value) {
+      onValueChange(addresses[0]);
+    }
+  }, [customerId, addresses, value, onValueChange]);
 
   const createAddressMutation = useMutation({
     mutationFn: async (data: CreateAddressDto) => {
@@ -118,36 +125,181 @@ export function AddressSelect({
     );
   }
 
-  const displayText = value
-    ? `${value.fullName}, ${value.city}, ${value.country}`
-    : `+ ${label}`;
-
   return (
     <div className="space-y-2">
       {label && <Label>{label}</Label>}
 
-      <div className="flex gap-2">
-        <Select
-          value={value?.id || ""}
-          onValueChange={(selectedId) => {
-            const selected = addresses.find((a) => a.id === selectedId);
-            onValueChange(selected || null);
-          }}
-        >
-          <SelectTrigger className="flex-1">
-            <SelectValue placeholder={displayText} />
-          </SelectTrigger>
-          <SelectContent>
-            {isLoading ? (
-              <SelectItem value="loading" disabled>
-                Loading addresses...
-              </SelectItem>
-            ) : addresses.length === 0 ? (
-              <SelectItem value="empty" disabled>
-                No addresses found
-              </SelectItem>
-            ) : (
-              addresses.map((address) => (
+      {isLoading ? (
+        <div className="rounded-md bg-slate-50 border border-slate-200 p-3 text-sm text-slate-600">
+          Loading addresses...
+        </div>
+      ) : addresses.length === 0 ? (
+        <div className="space-y-3">
+          <div className="rounded-md bg-blue-50 border border-blue-200 p-3 flex gap-2">
+            <AlertCircle className="h-4 w-4 text-blue-800 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-blue-800">
+              No addresses found for this customer. Create one to continue.
+            </p>
+          </div>
+          <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+            <DialogTrigger asChild>
+              <Button type="button" variant="default" className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Address
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Create New Address</DialogTitle>
+                <DialogDescription>
+                  Add a new delivery address for this customer
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name *</Label>
+                  <Input
+                    id="fullName"
+                    placeholder="John Doe"
+                    value={formData.fullName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, fullName: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="line1">Address Line 1 *</Label>
+                  <Input
+                    id="line1"
+                    placeholder="123 Main St"
+                    value={formData.line1}
+                    onChange={(e) =>
+                      setFormData({ ...formData, line1: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="line2">Address Line 2</Label>
+                  <Input
+                    id="line2"
+                    placeholder="Apt 4B (optional)"
+                    value={formData.line2}
+                    onChange={(e) =>
+                      setFormData({ ...formData, line2: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City *</Label>
+                    <Input
+                      id="city"
+                      placeholder="New York"
+                      value={formData.city}
+                      onChange={(e) =>
+                        setFormData({ ...formData, city: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="postalCode">Postal Code</Label>
+                    <Input
+                      id="postalCode"
+                      placeholder="10001"
+                      value={formData.postalCode}
+                      onChange={(e) =>
+                        setFormData({ ...formData, postalCode: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country *</Label>
+                  <Input
+                    id="country"
+                    placeholder="United States"
+                    value={formData.country}
+                    onChange={(e) =>
+                      setFormData({ ...formData, country: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    placeholder="+1 (555) 000-0000"
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="flex gap-2 justify-end pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCreateForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleCreateAddress}
+                    disabled={
+                      createAddressMutation.isPending ||
+                      !formData.fullName ||
+                      !formData.line1 ||
+                      !formData.city ||
+                      !formData.country
+                    }
+                  >
+                    {createAddressMutation.isPending
+                      ? "Creating..."
+                      : "Create Address"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {createAddressMutation.isError && (
+            <div className="rounded-md bg-red-50 border border-red-200 p-3 flex gap-2">
+              <AlertCircle className="h-4 w-4 text-red-800 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-800">
+                Failed to create address. Please try again.
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <Select
+            value={value?.id || ""}
+            onValueChange={(selectedId) => {
+              const selected = addresses.find((a) => a.id === selectedId);
+              onValueChange(selected || null);
+            }}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue
+                placeholder={
+                  value
+                    ? `${value.fullName}, ${value.city}, ${value.country}`
+                    : "Select an address..."
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {addresses.map((address) => (
                 <SelectItem key={address.id} value={address.id}>
                   <div className="flex flex-col">
                     <span>{address.fullName}</span>
@@ -156,147 +308,147 @@ export function AddressSelect({
                     </span>
                   </div>
                 </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
-          <DialogTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              title="Create new address"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Create New Address</DialogTitle>
-              <DialogDescription>
-                Add a new delivery address for this customer
-              </DialogDescription>
-            </DialogHeader>
+          <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                title="Create new address"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Create New Address</DialogTitle>
+                <DialogDescription>
+                  Add a new delivery address for this customer
+                </DialogDescription>
+              </DialogHeader>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name *</Label>
-                <Input
-                  id="fullName"
-                  placeholder="John Doe"
-                  value={formData.fullName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fullName: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="line1">Address Line 1 *</Label>
-                <Input
-                  id="line1"
-                  placeholder="123 Main St"
-                  value={formData.line1}
-                  onChange={(e) =>
-                    setFormData({ ...formData, line1: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="line2">Address Line 2</Label>
-                <Input
-                  id="line2"
-                  placeholder="Apt 4B (optional)"
-                  value={formData.line2}
-                  onChange={(e) =>
-                    setFormData({ ...formData, line2: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="city">City *</Label>
+                  <Label htmlFor="fullName">Full Name *</Label>
                   <Input
-                    id="city"
-                    placeholder="New York"
-                    value={formData.city}
+                    id="fullName"
+                    placeholder="John Doe"
+                    value={formData.fullName}
                     onChange={(e) =>
-                      setFormData({ ...formData, city: e.target.value })
+                      setFormData({ ...formData, fullName: e.target.value })
                     }
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="postalCode">Postal Code</Label>
+                  <Label htmlFor="line1">Address Line 1 *</Label>
                   <Input
-                    id="postalCode"
-                    placeholder="10001"
-                    value={formData.postalCode}
+                    id="line1"
+                    placeholder="123 Main St"
+                    value={formData.line1}
                     onChange={(e) =>
-                      setFormData({ ...formData, postalCode: e.target.value })
+                      setFormData({ ...formData, line1: e.target.value })
                     }
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="country">Country *</Label>
-                <Input
-                  id="country"
-                  placeholder="United States"
-                  value={formData.country}
-                  onChange={(e) =>
-                    setFormData({ ...formData, country: e.target.value })
-                  }
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="line2">Address Line 2</Label>
+                  <Input
+                    id="line2"
+                    placeholder="Apt 4B (optional)"
+                    value={formData.line2}
+                    onChange={(e) =>
+                      setFormData({ ...formData, line2: e.target.value })
+                    }
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  placeholder="+1 (555) 000-0000"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                />
-              </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City *</Label>
+                    <Input
+                      id="city"
+                      placeholder="New York"
+                      value={formData.city}
+                      onChange={(e) =>
+                        setFormData({ ...formData, city: e.target.value })
+                      }
+                    />
+                  </div>
 
-              <div className="flex gap-2 justify-end pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowCreateForm(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleCreateAddress}
-                  disabled={
-                    createAddressMutation.isPending ||
-                    !formData.fullName ||
-                    !formData.line1 ||
-                    !formData.city ||
-                    !formData.country
-                  }
-                >
-                  {createAddressMutation.isPending
-                    ? "Creating..."
-                    : "Create Address"}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="postalCode">Postal Code</Label>
+                    <Input
+                      id="postalCode"
+                      placeholder="10001"
+                      value={formData.postalCode}
+                      onChange={(e) =>
+                        setFormData({ ...formData, postalCode: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
 
-      {createAddressMutation.isError && (
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country *</Label>
+                  <Input
+                    id="country"
+                    placeholder="United States"
+                    value={formData.country}
+                    onChange={(e) =>
+                      setFormData({ ...formData, country: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    placeholder="+1 (555) 000-0000"
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="flex gap-2 justify-end pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCreateForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleCreateAddress}
+                    disabled={
+                      createAddressMutation.isPending ||
+                      !formData.fullName ||
+                      !formData.line1 ||
+                      !formData.city ||
+                      !formData.country
+                    }
+                  >
+                    {createAddressMutation.isPending
+                      ? "Creating..."
+                      : "Create Address"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
+
+      {createAddressMutation.isError && addresses.length > 0 && (
         <div className="rounded-md bg-red-50 border border-red-200 p-3 flex gap-2">
           <AlertCircle className="h-4 w-4 text-red-800 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-red-800">
