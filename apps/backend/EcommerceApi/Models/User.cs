@@ -1,12 +1,10 @@
-
 using System.ComponentModel.DataAnnotations;
-
 
 namespace EcommerceApi.Models
 {
     public class User
     {
-       public Guid Id { get; set; }
+        public Guid Id { get; set; }
 
         // Clerk user ID for authentication
         [Required, MaxLength(100)]
@@ -17,7 +15,6 @@ namespace EcommerceApi.Models
 
         [Required, EmailAddress]
         public string Email { get; set; } = string.Empty;
-        
 
         [Required]
         public string Role { get; set; } = "customer"; // "customer", "admin", "vendor"
@@ -26,6 +23,6 @@ namespace EcommerceApi.Models
 
         // Navigation
         public ICollection<Review>? Reviews { get; set; }
-        public Customer? Customer { get; set; }
+        public ICollection<Customer> CreatedCustomers { get; set; } = new List<Customer>();
     }
 }

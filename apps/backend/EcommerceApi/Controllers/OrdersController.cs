@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using EcommerceApi.Data;
 using EcommerceApi.DTOs.Order;
 using EcommerceApi.DTOs.Common;
 using EcommerceApi.DTOs.Customer;
+using EcommerceApi.Services;
 
 namespace EcommerceApi.Controllers
 {
@@ -60,16 +62,7 @@ namespace EcommerceApi.Controllers
                         Status = o.Status,
                         TotalAmount = o.TotalAmount,
                         CreatedAt = o.CreatedAt,
-                        Customer = o.Customer != null ? new CustomerDto
-                        {
-                            Id = o.Customer.Id,
-                            UserId = o.Customer.UserId,
-                            FullName = o.Customer.FullName,
-                            Phone = o.Customer.Phone,
-                            DateOfBirth = o.Customer.DateOfBirth,
-                            UserEmail = o.Customer.User != null ? o.Customer.User.Email : null,
-                            UserName = o.Customer.User != null ? o.Customer.User.Name : null
-                        } : null,
+                        Customer = o.Customer != null ? MapCustomerToDto(o.Customer) : null,
                         Address = o.Address != null ? new AddressInfo
                         {
                             FullName = o.Address.FullName,
@@ -116,16 +109,7 @@ namespace EcommerceApi.Controllers
                         Status = o.Status,
                         TotalAmount = o.TotalAmount,
                         CreatedAt = o.CreatedAt,
-                        Customer = o.Customer != null ? new CustomerDto
-                        {
-                            Id = o.Customer.Id,
-                            UserId = o.Customer.UserId,
-                            FullName = o.Customer.FullName,
-                            Phone = o.Customer.Phone,
-                            DateOfBirth = o.Customer.DateOfBirth,
-                            UserEmail = o.Customer.User != null ? o.Customer.User.Email : null,
-                            UserName = o.Customer.User != null ? o.Customer.User.Name : null
-                        } : null,
+                        Customer = o.Customer != null ? MapCustomerToDto(o.Customer) : null,
                         Address = o.Address != null ? new AddressInfo
                         {
                             FullName = o.Address.FullName,
@@ -267,7 +251,7 @@ namespace EcommerceApi.Controllers
                 var createdOrder = await _context.Orders
                     .Where(o => o.Id == order.Id)
                     .Include(o => o.Customer)
-                    .ThenInclude(c => c.User)
+                    .ThenInclude(c => c.CreatedByUser)
                     .Include(o => o.Address)
                     .FirstOrDefaultAsync();
 
@@ -279,16 +263,7 @@ namespace EcommerceApi.Controllers
                     Status = createdOrder.Status,
                     TotalAmount = createdOrder.TotalAmount,
                     CreatedAt = createdOrder.CreatedAt,
-                    Customer = createdOrder.Customer != null ? new CustomerDto
-                    {
-                        Id = createdOrder.Customer.Id,
-                        UserId = createdOrder.Customer.UserId,
-                        FullName = createdOrder.Customer.FullName,
-                        Phone = createdOrder.Customer.Phone,
-                        DateOfBirth = createdOrder.Customer.DateOfBirth,
-                        UserEmail = createdOrder.Customer.User != null ? createdOrder.Customer.User.Email : null,
-                        UserName = createdOrder.Customer.User != null ? createdOrder.Customer.User.Name : null
-                    } : null,
+                    Customer = createdOrder.Customer != null ? MapCustomerToDto(createdOrder.Customer) : null,
                     Address = createdOrder.Address != null ? new AddressInfo
                     {
                         FullName = createdOrder.Address.FullName,
@@ -306,6 +281,167 @@ namespace EcommerceApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating order");
+                return StatusCode(500, new { message = "An error occurred while creating the order" });
+            }
+        }
+
+        /// <summary>
+        /// Create order from website (anonymous/guest checkout)
+        /// Finds or creates customer based on email, creates address, and order
+        /// </summary>
+        [HttpPost("from-website")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(OrderDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<OrderDto>> CreateOrderFromWebsite([FromBody] CreateOrderFromWebsiteDto createOrderDto)
+        {
+            try
+            {
+                // Inject customer service through dependency resolution (for this we'll use context directly)
+                var _customerService = HttpContext.RequestServices.GetRequiredService<ICustomerService>();
+
+                // Find or create customer
+                var customer = await _customerService.GetCustomerByEmailAsync(createOrderDto.Email);
+                if (customer == null)
+                {
+                    customer = await _customerService.CreateCustomerAsync(new CreateCustomerDto
+                    {
+                        FullName = createOrderDto.FullName,
+                        Email = createOrderDto.Email,
+                        Phone = createOrderDto.Phone,
+                        DateOfBirth = null
+                    }, createdByUserId: null); // null means from website
+                }
+
+                // Create or use address
+                var address = new Models.Address
+                {
+                    Id = Guid.NewGuid(),
+                    CustomerId = customer.Id,
+                    FullName = createOrderDto.FullName,
+                    Line1 = createOrderDto.AddressLine1,
+                    Line2 = createOrderDto.AddressLine2,
+                    City = createOrderDto.City,
+                    Country = createOrderDto.Country,
+                    PostalCode = createOrderDto.PostalCode,
+                    Phone = createOrderDto.Phone
+                };
+
+                _context.Addresses.Add(address);
+                await _context.SaveChangesAsync();
+
+                // Validate all variants exist and have sufficient stock
+                var variantIds = createOrderDto.Items.Select(i => i.VariantId).ToList();
+                var variants = await _context.ProductVariants
+                    .Where(v => variantIds.Contains(v.Id))
+                    .ToListAsync();
+
+                if (variants.Count != variantIds.Count)
+                    return BadRequest(new { message = "One or more product variants not found" });
+
+                // Check stock availability
+                foreach (var item in createOrderDto.Items)
+                {
+                    var variant = variants.First(v => v.Id == item.VariantId);
+                    if (variant.Stock < item.Quantity)
+                        return BadRequest(new { message = $"Insufficient stock for variant {variant.Sku}. Available: {variant.Stock}, Requested: {item.Quantity}" });
+                }
+
+                // Calculate total amount and create order items
+                decimal totalAmount = 0;
+                var orderItems = new List<Models.OrderItem>();
+
+                foreach (var item in createOrderDto.Items)
+                {
+                    var variant = variants.First(v => v.Id == item.VariantId);
+                    var orderItem = new Models.OrderItem
+                    {
+                        Id = Guid.NewGuid(),
+                        VariantId = item.VariantId,
+                        Quantity = item.Quantity,
+                        Price = variant.Price
+                    };
+                    orderItems.Add(orderItem);
+                    totalAmount += orderItem.Price * orderItem.Quantity;
+
+                    // Decrease stock
+                    variant.Stock -= item.Quantity;
+                }
+
+                // Create order
+                var order = new Models.Order
+                {
+                    Id = Guid.NewGuid(),
+                    CustomerId = customer.Id,
+                    AddressId = address.Id,
+                    Status = "pending",
+                    TotalAmount = totalAmount,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Orders.Add(order);
+
+                // Add order items
+                foreach (var orderItem in orderItems)
+                {
+                    orderItem.OrderId = order.Id;
+                    _context.OrderItems.Add(orderItem);
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Create inventory logs
+                foreach (var item in createOrderDto.Items)
+                {
+                    var inventoryLog = new Models.InventoryLog
+                    {
+                        Id = Guid.NewGuid(),
+                        VariantId = item.VariantId,
+                        Change = -item.Quantity,
+                        Reason = $"Order {order.Id} created (website)",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.InventoryLogs.Add(inventoryLog);
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Fetch the full order with details
+                var createdOrder = await _context.Orders
+                    .Where(o => o.Id == order.Id)
+                    .Include(o => o.Customer)
+                    .ThenInclude(c => c.CreatedByUser)
+                    .Include(o => o.Address)
+                    .FirstOrDefaultAsync();
+
+                var orderDto = new OrderDto
+                {
+                    Id = createdOrder.Id,
+                    CustomerId = createdOrder.CustomerId,
+                    AddressId = createdOrder.AddressId,
+                    Status = createdOrder.Status,
+                    TotalAmount = createdOrder.TotalAmount,
+                    CreatedAt = createdOrder.CreatedAt,
+                    Customer = createdOrder.Customer != null ? MapCustomerToDto(createdOrder.Customer) : null,
+                    Address = createdOrder.Address != null ? new AddressInfo
+                    {
+                        FullName = createdOrder.Address.FullName,
+                        Line1 = createdOrder.Address.Line1,
+                        Line2 = createdOrder.Address.Line2,
+                        City = createdOrder.Address.City,
+                        PostalCode = createdOrder.Address.PostalCode,
+                        Country = createdOrder.Address.Country,
+                        Phone = createdOrder.Address.Phone
+                    } : null
+                };
+
+                _logger.LogInformation("Created order {OrderId} from website for customer {CustomerId}", order.Id, customer.Id);
+
+                return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, orderDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating order from website");
                 return StatusCode(500, new { message = "An error occurred while creating the order" });
             }
         }
@@ -446,6 +582,22 @@ namespace EcommerceApi.Controllers
                 _logger.LogError(ex, "Error deleting order {OrderId}", id);
                 return StatusCode(500, new { message = "An error occurred while deleting the order" });
             }
+        }
+
+        private static CustomerDto MapCustomerToDto(Models.Customer customer)
+        {
+            return new CustomerDto
+            {
+                Id = customer.Id,
+                CreatedByUserId = customer.CreatedByUserId,
+                FullName = customer.FullName,
+                Email = customer.Email,
+                Phone = customer.Phone,
+                DateOfBirth = customer.DateOfBirth,
+                IsFromWebsite = customer.IsFromWebsite,
+                CreatedAt = customer.CreatedAt,
+                CreatedByUserName = customer.CreatedByUser?.Name
+            };
         }
 
         private IQueryable<Models.Order> ApplySorting(IQueryable<Models.Order> query, string? sortBy, bool descending)

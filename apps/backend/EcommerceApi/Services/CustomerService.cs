@@ -8,9 +8,10 @@ namespace EcommerceApi.Services
     public interface ICustomerService
     {
         Task<Customer?> GetCustomerByIdAsync(Guid customerId);
-        Task<Customer?> GetCustomerByUserIdAsync(Guid userId);
-        Task<Customer> CreateOrGetCustomerAsync(Guid userId);
-        Task<Customer> CreateCustomerAsync(CreateCustomerDto createDto);
+        Task<Customer?> GetCustomerByEmailAsync(string email);
+        Task<Customer> CreateCustomerAsync(CreateCustomerDto createDto, Guid? createdByUserId = null);
+        Task<List<Customer>> GetCustomersByAdminAsync(Guid adminUserId);
+        Task<List<Customer>> GetWebsiteCustomersAsync();
         Task<Customer> UpdateCustomerAsync(Guid customerId, UpdateCustomerDto updateDto);
         Task<bool> CustomerExistsAsync(Guid customerId);
     }
@@ -29,80 +30,76 @@ namespace EcommerceApi.Services
         public async Task<Customer?> GetCustomerByIdAsync(Guid customerId)
         {
             return await _context.Customers
-                .Include(c => c.User)
+                .Include(c => c.CreatedByUser)
                 .Include(c => c.Addresses)
                 .FirstOrDefaultAsync(c => c.Id == customerId);
         }
 
-        public async Task<Customer?> GetCustomerByUserIdAsync(Guid userId)
+        /// <summary>
+        /// Get customer by email (for storefront orders)
+        /// </summary>
+        public async Task<Customer?> GetCustomerByEmailAsync(string email)
         {
             return await _context.Customers
-                .Include(c => c.User)
+                .Include(c => c.CreatedByUser)
                 .Include(c => c.Addresses)
-                .FirstOrDefaultAsync(c => c.UserId == userId);
+                .FirstOrDefaultAsync(c => c.Email == email);
         }
 
         /// <summary>
-        /// Creates a minimal customer if one doesn't exist for the user.
-        /// This is used for on-demand customer creation.
+        /// Create customer - allows duplicates, tracks creator
         /// </summary>
-        public async Task<Customer> CreateOrGetCustomerAsync(Guid userId)
+        public async Task<Customer> CreateCustomerAsync(CreateCustomerDto createDto, Guid? createdByUserId = null)
         {
-            // Check if customer already exists
-            var existingCustomer = await GetCustomerByUserIdAsync(userId);
-            if (existingCustomer != null)
-                return existingCustomer;
+            // NO duplicate check anymore - allows admin to create multiple customers
 
-            // Verify user exists
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-                throw new InvalidOperationException($"User with ID {userId} not found");
-
-            // Create minimal customer profile
             var customer = new Customer
             {
                 Id = Guid.NewGuid(),
-                UserId = userId,
-                FullName = user.Name, // Use user's name as default
-                Phone = null,
-                DateOfBirth = null
+                CreatedByUserId = createdByUserId,
+                FullName = createDto.FullName,
+                Email = createDto.Email,
+                Phone = createDto.Phone,
+                DateOfBirth = createDto.DateOfBirth,
+                IsFromWebsite = createdByUserId == null,  // If no admin, from website
+                CreatedAt = DateTime.UtcNow
             };
 
             _context.Customers.Add(customer);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Created customer {CustomerId} for user {UserId}", customer.Id, userId);
+            _logger.LogInformation(
+                "Created customer {CustomerId} by {CreatedBy}. IsFromWebsite: {IsFromWebsite}",
+                customer.Id,
+                createdByUserId ?? Guid.Empty,
+                customer.IsFromWebsite
+            );
 
             return customer;
         }
 
-        public async Task<Customer> CreateCustomerAsync(CreateCustomerDto createDto)
+        /// <summary>
+        /// Get customers created by specific admin
+        /// </summary>
+        public async Task<List<Customer>> GetCustomersByAdminAsync(Guid adminUserId)
         {
-            // Verify user exists
-            var user = await _context.Users.FindAsync(createDto.UserId);
-            if (user == null)
-                throw new InvalidOperationException($"User with ID {createDto.UserId} not found");
+            return await _context.Customers
+                .Where(c => c.CreatedByUserId == adminUserId)
+                .Include(c => c.Addresses)
+                .Include(c => c.Orders)
+                .ToListAsync();
+        }
 
-            // Check if customer already exists
-            var existingCustomer = await GetCustomerByUserIdAsync(createDto.UserId);
-            if (existingCustomer != null)
-                throw new InvalidOperationException($"Customer already exists for user {createDto.UserId}");
-
-            var customer = new Customer
-            {
-                Id = Guid.NewGuid(),
-                UserId = createDto.UserId,
-                FullName = createDto.FullName,
-                Phone = createDto.Phone,
-                DateOfBirth = createDto.DateOfBirth
-            };
-
-            _context.Customers.Add(customer);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Created customer {CustomerId} for user {UserId}", customer.Id, createDto.UserId);
-
-            return customer;
+        /// <summary>
+        /// Get all website customers (no admin creator)
+        /// </summary>
+        public async Task<List<Customer>> GetWebsiteCustomersAsync()
+        {
+            return await _context.Customers
+                .Where(c => c.IsFromWebsite)
+                .Include(c => c.Addresses)
+                .Include(c => c.Orders)
+                .ToListAsync();
         }
 
         public async Task<Customer> UpdateCustomerAsync(Guid customerId, UpdateCustomerDto updateDto)
@@ -112,6 +109,7 @@ namespace EcommerceApi.Services
                 throw new InvalidOperationException($"Customer with ID {customerId} not found");
 
             customer.FullName = updateDto.FullName;
+            customer.Email = updateDto.Email;
             customer.Phone = updateDto.Phone;
             customer.DateOfBirth = updateDto.DateOfBirth;
 

@@ -34,7 +34,7 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                var query = _context.Customers.Include(c => c.User);
+                var query = _context.Customers.Include(c => c.CreatedByUser);
                 var totalCount = await query.CountAsync();
 
                 var customers = await query
@@ -43,12 +43,14 @@ namespace EcommerceApi.Controllers
                     .Select(c => new CustomerDto
                     {
                         Id = c.Id,
-                        UserId = c.UserId,
+                        CreatedByUserId = c.CreatedByUserId,
                         FullName = c.FullName,
+                        Email = c.Email,
                         Phone = c.Phone,
                         DateOfBirth = c.DateOfBirth,
-                        UserEmail = c.User != null ? c.User.Email : null,
-                        UserName = c.User != null ? c.User.Name : null
+                        IsFromWebsite = c.IsFromWebsite,
+                        CreatedAt = c.CreatedAt,
+                        CreatedByUserName = c.CreatedByUser != null ? c.CreatedByUser.Name : null
                     })
                     .ToListAsync();
 
@@ -91,30 +93,7 @@ namespace EcommerceApi.Controllers
         }
 
         /// <summary>
-        /// Get customer by User ID
-        /// </summary>
-        [HttpGet("by-user/{userId}")]
-        [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<CustomerDto>> GetCustomerByUserId(Guid userId)
-        {
-            try
-            {
-                var customer = await _customerService.GetCustomerByUserIdAsync(userId);
-                if (customer == null)
-                    return NotFound(new { message = $"Customer not found for user {userId}" });
-
-                return Ok(MapToDto(customer));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving customer for user {UserId}", userId);
-                return StatusCode(500, new { message = "An error occurred while retrieving the customer" });
-            }
-        }
-
-        /// <summary>
-        /// Create a customer profile for a user
+        /// Create a customer profile (admin only)
         /// </summary>
         [HttpPost]
         [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status201Created)]
@@ -123,7 +102,8 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                var customer = await _customerService.CreateCustomerAsync(createDto);
+                var createdByUserId = GetAdminUserId();
+                var customer = await _customerService.CreateCustomerAsync(createDto, createdByUserId);
                 return CreatedAtAction(nameof(GetCustomer), new { id = customer.Id }, MapToDto(customer));
             }
             catch (InvalidOperationException ex)
@@ -134,32 +114,6 @@ namespace EcommerceApi.Controllers
             {
                 _logger.LogError(ex, "Error creating customer");
                 return StatusCode(500, new { message = "An error occurred while creating the customer" });
-            }
-        }
-
-        /// <summary>
-        /// Create or get customer (on-demand creation if doesn't exist)
-        /// Used when a user tries to create an order without a customer profile
-        /// </summary>
-        [HttpPost("create-or-get")]
-        [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<CustomerDto>> CreateOrGetCustomer([FromBody] CreateOrGetCustomerDto createOrGetDto)
-        {
-            try
-            {
-                var customer = await _customerService.CreateOrGetCustomerAsync(createOrGetDto.UserId);
-                return Ok(MapToDto(customer));
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating or getting customer");
-                return StatusCode(500, new { message = "An error occurred while creating or getting the customer" });
             }
         }
 
@@ -279,18 +233,21 @@ namespace EcommerceApi.Controllers
             return new CustomerDto
             {
                 Id = customer.Id,
-                UserId = customer.UserId,
+                CreatedByUserId = customer.CreatedByUserId,
                 FullName = customer.FullName,
+                Email = customer.Email,
                 Phone = customer.Phone,
                 DateOfBirth = customer.DateOfBirth,
-                UserEmail = customer.User?.Email,
-                UserName = customer.User?.Name
+                IsFromWebsite = customer.IsFromWebsite,
+                CreatedAt = customer.CreatedAt,
+                CreatedByUserName = customer.CreatedByUser?.Name
             };
         }
-    }
 
-    public class CreateOrGetCustomerDto
-    {
-        public Guid UserId { get; set; }
+        private Guid? GetAdminUserId()
+        {
+            var sub = User.FindFirst("sub")?.Value;
+            return string.IsNullOrEmpty(sub) ? null : Guid.TryParse(sub, out var guid) ? guid : null;
+        }
     }
 }

@@ -49,38 +49,33 @@ namespace EcommerceApi.Data
 
         private static async Task SeedTestCustomerAsync(AppDbContext context)
         {
-            Console.WriteLine("Seeding Test Customer linked to existing user...");
+            Console.WriteLine("Seeding Test Customer...");
 
-            // Check if user exists
-            var userExists = await context.Users.AnyAsync(u => u.Id == ExistingUserId);
-            if (!userExists)
-            {
-                Console.WriteLine($"WARNING: User with ID {ExistingUserId} not found in database. Skipping customer seeding.");
-                return;
-            }
-
-            // Check if customer already exists for this user
-            var customerExists = await context.Customers.AnyAsync(c => c.UserId == ExistingUserId);
+            // Check if customer already exists
+            var customerExists = await context.Customers.AnyAsync(c => c.Id == TestCustomerId);
             if (customerExists)
             {
-                Console.WriteLine($"Customer already exists for user {ExistingUserId}. Skipping customer creation.");
+                Console.WriteLine($"Customer already exists. Skipping customer creation.");
                 return;
             }
 
-            // Create test customer linked to the existing user
+            // Create test customer (created by admin)
             var testCustomer = new Customer
             {
                 Id = TestCustomerId,
-                UserId = ExistingUserId,
+                CreatedByUserId = ExistingUserId,  // Optional: Link to admin who created it
                 FullName = "John Doe",
+                Email = "john.doe@example.com",
                 Phone = "+1-555-0100",
-                DateOfBirth = new DateTime(1990, 5, 15, 0, 0, 0, DateTimeKind.Utc)
+                DateOfBirth = new DateTime(1990, 5, 15, 0, 0, 0, DateTimeKind.Utc),
+                IsFromWebsite = false,
+                CreatedAt = DateTime.UtcNow
             };
 
             context.Customers.Add(testCustomer);
             await context.SaveChangesAsync();
 
-            Console.WriteLine($"Added test customer linked to user {ExistingUserId}.");
+            Console.WriteLine($"Added test customer {TestCustomerId}.");
         }
 
         private static async Task SeedCategoriesAsync(AppDbContext context)

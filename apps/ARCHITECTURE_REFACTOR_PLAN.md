@@ -1,7 +1,9 @@
 # E-Commerce Backend Architecture Refactor Plan
 
 ## Vision
+
 Transform the system from a **B2C customer self-service platform** to a **B2B store owner management system** where:
+
 - Store owners/admins manage customers and orders
 - Customers are independent entities (not linked to User authentication)
 - Customers can come from multiple sources: website orders, manual admin entry, or other channels
@@ -39,6 +41,7 @@ Transform the system from a **B2C customer self-service platform** to a **B2B st
 ### 1. Update Customer Model
 
 **Current:**
+
 ```csharp
 public class Customer
 {
@@ -55,6 +58,7 @@ public class Customer
 ```
 
 **New:**
+
 ```csharp
 public class Customer
 {
@@ -81,6 +85,7 @@ public class Customer
 ```
 
 **Rationale:**
+
 - Remove `UserId` required foreign key (make it optional `CreatedByUserId`)
 - Add `Email` for customer identification and contact
 - Add `IsFromWebsite` to distinguish customer sources
@@ -92,6 +97,7 @@ public class Customer
 ### 2. Update User Model
 
 **Current:**
+
 ```csharp
 public class User
 {
@@ -106,6 +112,7 @@ public class User
 ```
 
 **New:**
+
 ```csharp
 public class User
 {
@@ -121,6 +128,7 @@ public class User
 ```
 
 **Rationale:**
+
 - Remove `Customer` one-to-one navigation
 - Add `CreatedCustomers` to track customers created by this admin
 - User is now purely an authentication/authorization entity
@@ -130,6 +138,7 @@ public class User
 ### 3. Update Database Relationships (AppDbContext.cs)
 
 **Current:**
+
 ```csharp
 // User -> Customer (one-to-one, optional)
 modelBuilder.Entity<User>()
@@ -140,6 +149,7 @@ modelBuilder.Entity<User>()
 ```
 
 **New:**
+
 ```csharp
 // User -> Customer (one-to-many for CreatedBy relationship)
 modelBuilder.Entity<User>()
@@ -150,6 +160,7 @@ modelBuilder.Entity<User>()
 ```
 
 **Rationale:**
+
 - Change from one-to-one to one-to-many
 - Allow multiple customers per admin
 - Use SetNull so deleting an admin doesn't delete customers
@@ -161,6 +172,7 @@ modelBuilder.Entity<User>()
 ### Phase 1: Database Migration
 
 **Files to Create:**
+
 - New EF Core migration to:
   - Remove `UserId` as required field from Customer
   - Add `CreatedByUserId` (nullable GUID)
@@ -171,6 +183,7 @@ modelBuilder.Entity<User>()
   - Add one-to-many relationship via CreatedByUserId
 
 **Migration Steps:**
+
 1. Add new columns to Customer table
 2. Create foreign key index on CreatedByUserId
 3. Migrate existing data (set CreatedByUserId to null for seed data)
@@ -184,13 +197,16 @@ modelBuilder.Entity<User>()
 **File: CustomerService.cs**
 
 **Methods to Delete:**
+
 - `GetCustomerByUserIdAsync()` - No longer relevant
 
 **Methods to Update:**
+
 - `CreateCustomerAsync()` - Remove duplicate check, add `createdByUserId` parameter
 - `CreateOrGetCustomerAsync()` - Add email-based lookup
 
 **Methods to Add:**
+
 - `GetCustomerByEmailAsync(string email)` - Find existing customer from storefront
 - `GetCustomersByAdminAsync(Guid adminUserId)` - List all customers for an admin
 - `GetAllCustomersAsync()` - For admin dashboard
@@ -265,6 +281,7 @@ public async Task<List<Customer>> GetWebsiteCustomersAsync()
 ### Phase 3: Update DTOs
 
 **UpdateCustomerDto.cs - Add email:**
+
 ```csharp
 public class UpdateCustomerDto
 {
@@ -276,6 +293,7 @@ public class UpdateCustomerDto
 ```
 
 **CustomerDto.cs - Add metadata:**
+
 ```csharp
 public class CustomerDto
 {
@@ -292,6 +310,7 @@ public class CustomerDto
 ```
 
 **New DTO for storefront:**
+
 ```csharp
 public class CreateOrderFromWebsiteDto
 {
@@ -316,6 +335,7 @@ public class CreateOrderFromWebsiteDto
 **CustomersController.cs**
 
 **Changes:**
+
 - Add authorization attributes to admin-only endpoints
 - Remove `GetCustomerByUserId()` endpoint
 - Add new endpoints for admin operations
@@ -403,6 +423,7 @@ public async Task<ActionResult<OrderDto>> CreateOrderFromWebsite(
 ### Phase 5: Update Frontend (Optional for now)
 
 **Changes needed in order creation page:**
+
 - If admin is logged in: Show list of customers (only theirs)
 - If creating customer: Show it's admin-created, not from website
 - Remove requirement to link to User
@@ -419,6 +440,7 @@ public async Task<ActionResult<OrderDto>> CreateOrderFromWebsite(
 4. Set `CreatedAt = NOW()` for all existing customers
 
 **SQL Migration Example:**
+
 ```sql
 -- Add new columns
 ALTER TABLE "Customers" ADD COLUMN "CreatedByUserId" UUID NULL;
@@ -447,26 +469,26 @@ ON DELETE SET NULL;
 
 ## Benefits of This Architecture
 
-| Benefit | Impact |
-|---------|--------|
-| **Multiple customers per admin** | Admins can manage 100+ customers |
-| **Anonymous orders** | Website can accept orders without auth |
-| **Source tracking** | Know which orders came from website vs manual entry |
-| **Scalable** | Easy to add more order sources (API, integrations, etc) |
-| **Flexible customer creation** | Admin entry, website forms, imports, APIs |
-| **Clear separation of concerns** | User = authentication, Customer = order entity |
-| **Audit trail** | Track who created each customer and when |
+| Benefit                          | Impact                                                  |
+| -------------------------------- | ------------------------------------------------------- |
+| **Multiple customers per admin** | Admins can manage 100+ customers                        |
+| **Anonymous orders**             | Website can accept orders without auth                  |
+| **Source tracking**              | Know which orders came from website vs manual entry     |
+| **Scalable**                     | Easy to add more order sources (API, integrations, etc) |
+| **Flexible customer creation**   | Admin entry, website forms, imports, APIs               |
+| **Clear separation of concerns** | User = authentication, Customer = order entity          |
+| **Audit trail**                  | Track who created each customer and when                |
 
 ---
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|-----------|
-| **Data migration loss** | Export existing data, test migration on copy first |
-| **Customer duplication** | Add unique constraint on (Email, IsFromWebsite) if needed |
-| **Orders orphaned if admin deleted** | Use ON DELETE SET NULL, allow orphaned customers |
-| **Frontend assumes one customer per user** | Update order creation page to use new endpoint |
+| Risk                                       | Mitigation                                                |
+| ------------------------------------------ | --------------------------------------------------------- |
+| **Data migration loss**                    | Export existing data, test migration on copy first        |
+| **Customer duplication**                   | Add unique constraint on (Email, IsFromWebsite) if needed |
+| **Orders orphaned if admin deleted**       | Use ON DELETE SET NULL, allow orphaned customers          |
+| **Frontend assumes one customer per user** | Update order creation page to use new endpoint            |
 
 ---
 
@@ -498,12 +520,11 @@ ON DELETE SET NULL;
 
 ---
 
-## Questions to Resolve
+## Questions to Resolve (Answered)
 
-- [ ] Should admins only see customers they created, or all customers?
-- [ ] Should there be a "default admin" who can see all customers?
-- [ ] Do you want role-based access control beyond just "admin"?
-- [ ] Should customers be soft-deleted or hard-deleted?
-- [ ] Do you need customer groups/segments?
-- [ ] Should there be a customer approval workflow?
-
+- Should admins only see customers they created, or all customers? all the customers coming from their storefront and sources
+- Should there be a "default admin" who can see all customers? yes
+- Do you want role-based access control beyond just "admin"? later on we may introduce staffs or employees
+- Should customers be soft-deleted or hard-deleted? hard deleted
+- Do you need customer groups/segments? yes
+- Should there be a customer approval workflow? no

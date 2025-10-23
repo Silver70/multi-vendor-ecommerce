@@ -30,11 +30,11 @@ namespace EcommerceApi.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // User -> Customer (one-to-one, optional)
+            // User -> Customer (one-to-many for CreatedBy relationship)
             modelBuilder.Entity<User>()
-                .HasOne(u => u.Customer)
-                .WithOne(c => c.User)
-                .HasForeignKey<Customer>(c => c.UserId)
+                .HasMany(u => u.CreatedCustomers)
+                .WithOne(c => c.CreatedByUser)
+                .HasForeignKey(c => c.CreatedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
             // Customer -> Address (one-to-many)

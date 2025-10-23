@@ -4,11 +4,11 @@ namespace EcommerceApi.DTOs.Customer
 {
     public class CreateCustomerDto
     {
-        [Required]
-        public Guid UserId { get; set; }
-
         [Required, MaxLength(100)]
         public string FullName { get; set; } = string.Empty;
+
+        [EmailAddress, MaxLength(255)]
+        public string? Email { get; set; }
 
         [Phone]
         public string? Phone { get; set; }
