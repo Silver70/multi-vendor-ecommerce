@@ -88,7 +88,7 @@ export const createOrGetCustomer = createServerFn({ method: "POST" })
   });
 
 // Update customer profile
-export const updateCustomer = createServerFn({ method: "PUT" })
+export const updateCustomer = createServerFn()
   .inputValidator((d: { id: string; data: UpdateCustomerDto }) => d)
   .handler(async ({ data }) => {
     const response = await axios.put<CustomerDto>(
@@ -105,3 +105,28 @@ export const deleteCustomer = createServerFn({ method: "POST" })
     await axios.delete(`${API_BASE_URL}/api/Customers/${data}`);
     return { success: true };
   });
+
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+// Get all customers with pagination
+export const getCustomers = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const response = await axios.get<PagedResult<CustomerDto>>(
+      `${API_BASE_URL}/api/Customers`
+    );
+    return response.data;
+  }
+);
+
+export const getCustomersQueryOptions = queryOptions({
+  queryKey: ["customers"],
+  queryFn: () => getCustomers(),
+});

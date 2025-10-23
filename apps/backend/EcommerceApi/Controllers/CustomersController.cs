@@ -24,6 +24,50 @@ namespace EcommerceApi.Controllers
         }
 
         /// <summary>
+        /// Get all customers with pagination
+        /// </summary>
+        [HttpGet]
+        [ProducesResponseType(typeof(PagedResult<CustomerDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<PagedResult<CustomerDto>>> GetAllCustomers(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var query = _context.Customers.Include(c => c.User);
+                var totalCount = await query.CountAsync();
+
+                var customers = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(c => new CustomerDto
+                    {
+                        Id = c.Id,
+                        UserId = c.UserId,
+                        FullName = c.FullName,
+                        Phone = c.Phone,
+                        DateOfBirth = c.DateOfBirth,
+                        UserEmail = c.User != null ? c.User.Email : null,
+                        UserName = c.User != null ? c.User.Name : null
+                    })
+                    .ToListAsync();
+
+                return Ok(new PagedResult<CustomerDto>
+                {
+                    Items = customers,
+                    TotalCount = totalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving all customers");
+                return StatusCode(500, new { message = "An error occurred while retrieving customers" });
+            }
+        }
+
+        /// <summary>
         /// Get a customer by ID with their addresses
         /// </summary>
         [HttpGet("{id}")]
