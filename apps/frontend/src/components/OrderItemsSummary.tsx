@@ -5,7 +5,6 @@ import { OrderItemInput } from "~/components/ProductVariantSearch"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Button } from "~/components/ui/button"
 import { Input } from "~/components/ui/input"
-import { Badge } from "~/components/ui/badge"
 import { Separator } from "~/components/ui/separator"
 import { Trash2, Edit2 } from "lucide-react"
 import {
@@ -74,8 +73,8 @@ export function OrderItemsSummary({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product</TableHead>
                 <TableHead>SKU</TableHead>
+                <TableHead>Product</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead className="text-center">Quantity</TableHead>
                 <TableHead className="text-right">Subtotal</TableHead>
@@ -86,10 +85,10 @@ export function OrderItemsSummary({
               {items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell>
-                    <div className="font-medium">{item.productName}</div>
+                    <div className="font-medium">{item.variantSku}</div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{item.variantSku}</Badge>
+                    <div className="text-sm text-muted-foreground">{item.productName}</div>
                   </TableCell>
                   <TableCell>${item.price.toFixed(2)}</TableCell>
                   <TableCell>
@@ -156,10 +155,10 @@ export function OrderItemsSummary({
             <div key={item.id} className="border rounded-lg p-3 space-y-2">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="font-medium text-sm">{item.productName}</div>
-                  <Badge variant="outline" className="mt-1">
-                    {item.variantSku}
-                  </Badge>
+                  <div className="font-medium text-sm">{item.variantSku}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {item.productName}
+                  </div>
                 </div>
                 <Button
                   type="button"

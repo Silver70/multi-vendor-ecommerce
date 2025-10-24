@@ -109,7 +109,10 @@ function RouteComponent() {
                 <CardTitle className="text-base">Order Items</CardTitle>
               </CardHeader>
               <CardContent>
-                <ProductVariantSearch onAddItem={handleAddItem} />
+                <ProductVariantSearch
+                  onAddItem={handleAddItem}
+                  currentOrderItems={orderItems}
+                />
               </CardContent>
             </Card>
 

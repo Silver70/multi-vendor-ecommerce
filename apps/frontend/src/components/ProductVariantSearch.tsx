@@ -7,8 +7,6 @@ import { ProductVariant } from "~/types/productVariant";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { Badge } from "~/components/ui/badge";
-import { X } from "lucide-react";
 
 export interface OrderItemInput {
   id: string;
@@ -23,13 +21,21 @@ export interface OrderItemInput {
 
 interface ProductVariantSearchProps {
   onAddItem: (item: OrderItemInput) => void;
+  currentOrderItems?: OrderItemInput[];
 }
 
-export function ProductVariantSearch({ onAddItem }: ProductVariantSearchProps) {
+export function ProductVariantSearch({ onAddItem, currentOrderItems = [] }: ProductVariantSearchProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [quantity, setQuantity] = React.useState(1);
+  const [recentlyAddedIds, setRecentlyAddedIds] = React.useState<Set<string>>(new Set());
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Sync highlighted items with current order items - only highlight items that are in the order
+  React.useEffect(() => {
+    const currentVariantIds = new Set(currentOrderItems.map((item) => item.variantId));
+    setRecentlyAddedIds(currentVariantIds);
+  }, [currentOrderItems]);
 
   // Fetch all variants without pagination
   const { data: allVariants = [], isLoading: isLoadingVariants } = useQuery(
@@ -78,6 +84,11 @@ export function ProductVariantSearch({ onAddItem }: ProductVariantSearchProps) {
       quantity,
       subtotal: variant.price * quantity,
     });
+
+    // Highlight the added variant
+    const newRecentlyAdded = new Set(recentlyAddedIds);
+    newRecentlyAdded.add(variant.id);
+    setRecentlyAddedIds(newRecentlyAdded);
 
     // Reset form
     setSearchQuery("");
@@ -142,43 +153,50 @@ export function ProductVariantSearch({ onAddItem }: ProductVariantSearchProps) {
                 </div>
               ) : (
                 <div>
-                  {(searchQuery ? filteredVariants : allVariants).map((variant) => (
-                    <button
-                      key={variant.id}
-                      type="button"
-                      onClick={() => handleSelectVariant(variant)}
-                      className="w-full text-left p-3 border-b last:border-b-0 transition-colors hover:bg-muted"
-                      disabled={quantity > variant.stock}
-                    >
-                      <div className="space-y-1">
-                        <div className="font-medium text-sm">
-                          {variant.productName || "Unknown Product"}
-                        </div>
-                        <div className="flex gap-2 items-center flex-wrap">
-                          <Badge variant="outline" className="text-xs">
+                  {(searchQuery ? filteredVariants : allVariants).map((variant) => {
+                    const isRecentlyAdded = recentlyAddedIds.has(variant.id);
+                    return (
+                      <button
+                        key={variant.id}
+                        type="button"
+                        onClick={() => handleSelectVariant(variant)}
+                        className={`w-full text-left p-3 border-b last:border-b-0 transition-colors ${
+                          isRecentlyAdded
+                            ? "bg-green-100 hover:bg-green-150"
+                            : "hover:bg-muted"
+                        }`}
+                        disabled={quantity > variant.stock}
+                      >
+                        <div className="space-y-1">
+                          <div className="font-medium text-sm">
                             {variant.sku}
-                          </Badge>
-                          <span className="text-sm font-medium">
-                            ${variant.price.toFixed(2)}
-                          </span>
-                          <span
-                            className={`text-xs ${
-                              variant.stock > 0
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }`}
-                          >
-                            {variant.stock} in stock
-                          </span>
-                          {quantity > variant.stock && (
-                            <span className="text-xs text-red-600">
-                              Only {variant.stock} available
+                          </div>
+                          <div className="flex gap-2 items-center flex-wrap">
+                            <span className="text-xs text-muted-foreground">
+                              {variant.productName || "Unknown Product"}
                             </span>
-                          )}
+                            <span className="text-sm font-medium">
+                              ${variant.price.toFixed(2)}
+                            </span>
+                            <span
+                              className={`text-xs ${
+                                variant.stock > 0
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {variant.stock} in stock
+                            </span>
+                            {quantity > variant.stock && (
+                              <span className="text-xs text-red-600">
+                                Only {variant.stock} available
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
