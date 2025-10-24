@@ -250,7 +250,9 @@ function RouteComponent() {
     const matchesSearch =
       order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (order.customer?.fullName &&
-        order.customer.fullName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        order.customer.fullName
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())) ||
       (order.customer?.email &&
         order.customer.email.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus =
@@ -312,7 +314,10 @@ function RouteComponent() {
           </DropdownMenu>
 
           {/* Add New Order Button */}
-          <Button className="gap-2">
+          <Button
+            className="gap-2"
+            onClick={() => navigate({ to: "/dashboard/orders/create" })}
+          >
             <Plus className="h-4 w-4" />
             Add Order
           </Button>

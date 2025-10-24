@@ -1,53 +1,55 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { CustomerSearchSelect } from "~/components/CustomerSearchSelect"
-import { AddressSelect } from "~/components/AddressSelect"
+import * as React from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CustomerSearchSelect } from "~/components/CustomerSearchSelect";
+import { AddressSelect } from "~/components/AddressSelect";
 import {
   ProductVariantSearch,
   OrderItemInput,
-} from "~/components/ProductVariantSearch"
-import { OrderItemsSummary } from "~/components/OrderItemsSummary"
-import { createOrder, CreateOrderDto } from "~/lib/ordersFn"
-import { CustomerDto } from "~/lib/customersFn"
-import { AddressDto } from "~/lib/addressFn"
-import { Button } from "~/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
-import { AlertCircle, CheckCircle } from "lucide-react"
+} from "~/components/ProductVariantSearch";
+import { OrderItemsSummary } from "~/components/OrderItemsSummary";
+import { createOrder, CreateOrderDto } from "~/lib/ordersFn";
+import { CustomerDto } from "~/lib/customersFn";
+import { AddressDto } from "~/lib/addressFn";
+import { Button } from "~/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { AlertCircle, CheckCircle } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/orders/create")({
   component: RouteComponent,
-})
+});
 
 function RouteComponent() {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [selectedCustomer, setSelectedCustomer] = React.useState<CustomerDto | null>(null)
-  const [selectedAddress, setSelectedAddress] = React.useState<AddressDto | null>(null)
-  const [orderItems, setOrderItems] = React.useState<OrderItemInput[]>([])
+  const [selectedCustomer, setSelectedCustomer] =
+    React.useState<CustomerDto | null>(null);
+  const [selectedAddress, setSelectedAddress] =
+    React.useState<AddressDto | null>(null);
+  const [orderItems, setOrderItems] = React.useState<OrderItemInput[]>([]);
 
   const createOrderMutation = useMutation({
     mutationFn: async (data: CreateOrderDto) => {
-      return await createOrder({ data })
+      return await createOrder({ data });
     },
     onSuccess: (createdOrder) => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] })
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       navigate({
         to: `/dashboard/orders/${createdOrder.id}`,
-      })
+      });
     },
-  })
+  });
 
   const handleAddItem = (item: OrderItemInput) => {
-    setOrderItems([...orderItems, item])
-  }
+    setOrderItems([...orderItems, item]);
+  };
 
   const handleRemoveItem = (itemId: string) => {
-    setOrderItems(orderItems.filter((item) => item.id !== itemId))
-  }
+    setOrderItems(orderItems.filter((item) => item.id !== itemId));
+  };
 
   const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
     setOrderItems(
@@ -57,18 +59,18 @@ function RouteComponent() {
             ...item,
             quantity: newQuantity,
             subtotal: item.price * newQuantity,
-          }
+          };
         }
-        return item
+        return item;
       })
-    )
-  }
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!selectedCustomer || !selectedAddress || orderItems.length === 0) {
-      return
+      return;
     }
 
     const orderData: CreateOrderDto = {
@@ -78,13 +80,13 @@ function RouteComponent() {
         variantId: item.variantId,
         quantity: item.quantity,
       })),
-    }
+    };
 
-    createOrderMutation.mutate(orderData)
-  }
+    createOrderMutation.mutate(orderData);
+  };
 
   const isFormValid =
-    selectedCustomer && selectedAddress && orderItems.length > 0
+    selectedCustomer && selectedAddress && orderItems.length > 0;
 
   return (
     <div className="space-y-6">
@@ -99,6 +101,26 @@ function RouteComponent() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Main Content Grid */}
         <div className="grid gap-6 md:grid-cols-3">
+          {/* Main Content - Order Items */}
+          <div className="md:col-span-2 space-y-4">
+            {/* Add Items Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Order Items</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ProductVariantSearch onAddItem={handleAddItem} />
+              </CardContent>
+            </Card>
+
+            {/* Items Summary Card */}
+            <OrderItemsSummary
+              items={orderItems}
+              onRemoveItem={handleRemoveItem}
+              onUpdateQuantity={handleUpdateQuantity}
+            />
+          </div>
+
           {/* Sidebar - Customer & Address Selection */}
           <div className="md:col-span-1 space-y-4">
             {/* Customer Selection Card */}
@@ -117,17 +139,25 @@ function RouteComponent() {
                   <div className="p-3 bg-muted rounded-md text-sm space-y-1">
                     <div>
                       <span className="text-muted-foreground">Email:</span>
-                      <div className="font-medium">{selectedCustomer.email || "No email"}</div>
+                      <div className="font-medium">
+                        {selectedCustomer.email || "No email"}
+                      </div>
                     </div>
                     {selectedCustomer.phone && (
                       <div>
                         <span className="text-muted-foreground">Phone:</span>
-                        <div className="font-medium">{selectedCustomer.phone}</div>
+                        <div className="font-medium">
+                          {selectedCustomer.phone}
+                        </div>
                       </div>
                     )}
                     <div className="text-xs pt-2 border-t">
                       <span className="text-muted-foreground">Created:</span>
-                      <div>{new Date(selectedCustomer.createdAt).toLocaleDateString()}</div>
+                      <div>
+                        {new Date(
+                          selectedCustomer.createdAt
+                        ).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -149,42 +179,28 @@ function RouteComponent() {
 
                 {selectedAddress && (
                   <div className="mt-4 p-3 bg-muted rounded-md text-sm space-y-1">
-                    <div className="font-medium">{selectedAddress.fullName}</div>
+                    <div className="font-medium">
+                      {selectedAddress.fullName}
+                    </div>
                     <div className="text-muted-foreground">
                       {selectedAddress.line1}
                       {selectedAddress.line2 && <>, {selectedAddress.line2}</>}
                     </div>
                     <div className="text-muted-foreground">
                       {selectedAddress.city}, {selectedAddress.country}
-                      {selectedAddress.postalCode && <> {selectedAddress.postalCode}</>}
+                      {selectedAddress.postalCode && (
+                        <> {selectedAddress.postalCode}</>
+                      )}
                     </div>
                     {selectedAddress.phone && (
-                      <div className="text-muted-foreground">{selectedAddress.phone}</div>
+                      <div className="text-muted-foreground">
+                        {selectedAddress.phone}
+                      </div>
                     )}
                   </div>
                 )}
               </CardContent>
             </Card>
-          </div>
-
-          {/* Main Content - Order Items */}
-          <div className="md:col-span-2 space-y-4">
-            {/* Add Items Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Order Items</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ProductVariantSearch onAddItem={handleAddItem} />
-              </CardContent>
-            </Card>
-
-            {/* Items Summary Card */}
-            <OrderItemsSummary
-              items={orderItems}
-              onRemoveItem={handleRemoveItem}
-              onUpdateQuantity={handleUpdateQuantity}
-            />
           </div>
         </div>
 
@@ -214,7 +230,9 @@ function RouteComponent() {
         {!selectedCustomer && (
           <div className="rounded-md bg-yellow-50 border border-yellow-200 p-4 flex gap-3">
             <AlertCircle className="h-5 w-5 text-yellow-800 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-yellow-800">Please select a customer to proceed</p>
+            <p className="text-sm text-yellow-800">
+              Please select a customer to proceed
+            </p>
           </div>
         )}
 
@@ -255,10 +273,12 @@ function RouteComponent() {
             disabled={!isFormValid || createOrderMutation.isPending}
             className="flex-1 md:flex-none"
           >
-            {createOrderMutation.isPending ? "Creating Order..." : "Create Order"}
+            {createOrderMutation.isPending
+              ? "Creating Order..."
+              : "Create Order"}
           </Button>
         </div>
       </form>
     </div>
-  )
+  );
 }
