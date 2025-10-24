@@ -31,6 +31,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { DataTable } from "~/components/data-table";
 import { Order, getOrdersQueryOptions, updateOrder } from "~/lib/ordersFn";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -87,6 +94,9 @@ function RouteComponent() {
   const [error, setError] = useState<string | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
+  const [updateStatusDialogOpen, setUpdateStatusDialogOpen] = useState(false);
+  const [orderToUpdate, setOrderToUpdate] = useState<string | null>(null);
+  const [newStatus, setNewStatus] = useState<string>("");
   const {
     data: ordersResponse,
     isLoading: isQueryLoading,
@@ -128,6 +138,53 @@ function RouteComponent() {
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to cancel order";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateStatusClick = (orderId: string, currentStatus: string) => {
+    setOrderToUpdate(orderId);
+    setNewStatus(currentStatus);
+    setUpdateStatusDialogOpen(true);
+  };
+
+  const handleConfirmUpdateStatus = async () => {
+    if (!orderToUpdate || !newStatus) return;
+
+    const currentOrder = orders.find((o) => o.id === orderToUpdate);
+    if (!currentOrder) return;
+
+    // Don't update if status hasn't changed
+    if (currentOrder.status === newStatus) {
+      setUpdateStatusDialogOpen(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await updateOrder({
+        data: {
+          id: orderToUpdate,
+          order: { status: newStatus as "pending" | "paid" | "shipped" | "delivered" | "cancelled" },
+        },
+      });
+
+      // Invalidate and refetch orders
+      await queryClient.invalidateQueries(getOrdersQueryOptions);
+
+      // Show success toast
+      toast.success(`Order status updated to ${newStatus}`);
+      setUpdateStatusDialogOpen(false);
+      setOrderToUpdate(null);
+      setNewStatus("");
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to update order status";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -277,7 +334,14 @@ function RouteComponent() {
               >
                 View details
               </DropdownMenuItem>
-              <DropdownMenuItem>Update status</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  handleUpdateStatusClick(order.id, order.status)
+                }
+                disabled={order.status === "cancelled"}
+              >
+                Update status
+              </DropdownMenuItem>
               <DropdownMenuItem
                 className={`text-red-600 ${
                   order.status === "cancelled"
@@ -409,6 +473,52 @@ function RouteComponent() {
               disabled={isLoading}
             >
               {isLoading ? "Cancelling..." : "Cancel Order"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Status Dialog */}
+      <Dialog open={updateStatusDialogOpen} onOpenChange={setUpdateStatusDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Order Status</DialogTitle>
+            <DialogDescription>
+              Select a new status for this order.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="status" className="text-sm font-medium">
+                Status
+              </label>
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select a status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setUpdateStatusDialogOpen(false)}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmUpdateStatus}
+              disabled={isLoading || newStatus === orders.find((o) => o.id === orderToUpdate)?.status}
+            >
+              {isLoading ? "Updating..." : "Update Status"}
             </Button>
           </DialogFooter>
         </DialogContent>
