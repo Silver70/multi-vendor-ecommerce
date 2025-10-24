@@ -99,8 +99,6 @@ function RouteComponent() {
     if (product) {
       setProductName(product.name);
       setDescription(product.description || "");
-      setCategoryId(product.categoryId);
-      setVendorId(product.vendorId || "");
       setIsActive(product.isActive);
 
       // Convert product attributes to internal format
@@ -129,6 +127,19 @@ function RouteComponent() {
       }
     }
   }, [product]);
+
+  // Set category and vendor after they are loaded to ensure Select has options available
+  useEffect(() => {
+    if (product && categories.length > 0) {
+      setCategoryId(product.categoryId);
+    }
+  }, [product, categories]);
+
+  useEffect(() => {
+    if (product && vendors.length > 0) {
+      setVendorId(product.vendorId || "");
+    }
+  }, [product, vendors]);
 
   // Update Product Mutation
   const updateProductMutation = useMutation({

@@ -22,7 +22,13 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { DataTable } from "~/components/data-table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
 import { Product } from "~/types/product";
 import { getProductsQueryOptions, deleteProduct } from "~/lib/productFn";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -143,7 +149,16 @@ function RouteComponent() {
                 Copy product ID
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Edit product</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  navigate({
+                    to: "/dashboard/inventory/products/$productId/edit",
+                    params: { productId: product.id },
+                  })
+                }
+              >
+                Edit product
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() =>
                   navigate({
@@ -306,12 +321,14 @@ function RouteComponent() {
                 <CardTitle className="text-red-600">Delete Product</CardTitle>
               </div>
               <CardDescription className="mt-2">
-                Are you sure you want to delete "{deleteConfirmation.productName}"?
+                Are you sure you want to delete "
+                {deleteConfirmation.productName}"?
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-6">
-                This action cannot be undone. The product and all its variants will be permanently removed from the system.
+                This action cannot be undone. The product and all its variants
+                will be permanently removed from the system.
               </p>
               <div className="flex gap-3 justify-end">
                 <Button
@@ -333,7 +350,8 @@ function RouteComponent() {
               </div>
               {deleteProductMutation.isError && (
                 <div className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
-                  Error deleting product. Please try again or check if the product has associated orders.
+                  Error deleting product. Please try again or check if the
+                  product has associated orders.
                 </div>
               )}
             </CardContent>
