@@ -27,6 +27,45 @@ namespace EcommerceApi.Controllers
         }
 
         /// <summary>
+        /// Get all product variants without pagination (for dropdowns/selects)
+        /// </summary>
+        [HttpGet("all")]
+        [ProducesResponseType(typeof(List<ProductVariantDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<ProductVariantDto>>> GetAllProductVariants()
+        {
+            try
+            {
+                var variants = await _context.ProductVariants
+                    .Include(pv => pv.Product)
+                    .ToListAsync();
+
+                var items = new List<ProductVariantDto>();
+                foreach (var variant in variants)
+                {
+                    var attrs = await _variantService.LoadVariantAttributesAsync(variant.Id);
+                    items.Add(new ProductVariantDto
+                    {
+                        Id = variant.Id,
+                        ProductId = variant.ProductId,
+                        Sku = variant.Sku,
+                        Price = variant.Price,
+                        Stock = variant.Stock,
+                        Attributes = attrs,
+                        CreatedAt = variant.CreatedAt,
+                        ProductName = variant.Product != null ? variant.Product.Name : null
+                    });
+                }
+
+                return Ok(items);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving all product variants");
+                return StatusCode(500, new { message = "An error occurred while retrieving product variants" });
+            }
+        }
+
+        /// <summary>
         /// Get paginated and filtered list of product variants
         /// </summary>
         [HttpGet]

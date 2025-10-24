@@ -43,6 +43,22 @@ export interface ProductVariantFilterParams {
   sortDescending?: boolean;
 }
 
+// Get all product variants without pagination (for dropdowns/selects)
+export const getAllProductVariants = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const response = await axios.get<ProductVariant[]>(
+      `${API_BASE_URL}/api/ProductVariants/all`
+    );
+    return response.data;
+  }
+);
+
+export const getAllProductVariantsQueryOptions = () =>
+  queryOptions({
+    queryKey: ["productVariants", "all"],
+    queryFn: () => getAllProductVariants(),
+  });
+
 // Get all product variants with pagination and filtering
 export const getProductVariants = createServerFn({ method: "GET" })
   .inputValidator((d?: ProductVariantFilterParams) => d)

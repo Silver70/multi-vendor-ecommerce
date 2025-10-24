@@ -2,21 +2,13 @@
 
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getProductVariantsQueryOptions } from "~/lib/variantsFn";
+import { getAllProductVariantsQueryOptions } from "~/lib/variantsFn";
 import { ProductVariant } from "~/types/productVariant";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "~/components/ui/dialog";
-import { AlertCircle, Plus } from "lucide-react";
 import { Badge } from "~/components/ui/badge";
+import { X } from "lucide-react";
 
 export interface OrderItemInput {
   id: string;
@@ -34,18 +26,15 @@ interface ProductVariantSearchProps {
 }
 
 export function ProductVariantSearch({ onAddItem }: ProductVariantSearchProps) {
-  const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [selectedVariant, setSelectedVariant] =
-    React.useState<ProductVariant | null>(null);
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [quantity, setQuantity] = React.useState(1);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-  // Fetch all variants without filters
-  const { data: variantsData, isLoading: isLoadingVariants } = useQuery(
-    getProductVariantsQueryOptions()
+  // Fetch all variants without pagination
+  const { data: allVariants = [], isLoading: isLoadingVariants } = useQuery(
+    getAllProductVariantsQueryOptions()
   );
-
-  const allVariants = variantsData?.items || [];
 
   // Filter variants based on search query
   const filteredVariants = searchQuery
@@ -57,255 +46,145 @@ export function ProductVariantSearch({ onAddItem }: ProductVariantSearchProps) {
       )
     : [];
 
-  const handleAddItem = () => {
-    if (!selectedVariant) return;
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
 
-    if (quantity > selectedVariant.stock) {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectVariant = (variant: ProductVariant) => {
+    // Immediately add the variant to order items
+    if (quantity > variant.stock) {
       return;
     }
 
     const itemId = `${Date.now()}-${Math.random()}`;
     onAddItem({
       id: itemId,
-      productId: selectedVariant.productId,
-      productName: selectedVariant.productName || "Unknown Product",
-      variantId: selectedVariant.id,
-      variantSku: selectedVariant.sku,
-      price: selectedVariant.price,
+      productId: variant.productId,
+      productName: variant.productName || "Unknown Product",
+      variantId: variant.id,
+      variantSku: variant.sku,
+      price: variant.price,
       quantity,
-      subtotal: selectedVariant.price * quantity,
+      subtotal: variant.price * quantity,
     });
 
     // Reset form
-    setSelectedVariant(null);
-    setQuantity(1);
     setSearchQuery("");
-    setOpen(false);
+    setQuantity(1);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button type="button" variant="outline" className="w-full">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Product to Order
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Add Product to Order</DialogTitle>
-          <DialogDescription>
-            Search for a variant by product name, SKU, or product ID and add it
-            to your order
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Variant Search */}
-          <div className="space-y-2">
-            <Label htmlFor="variantSearch">Search Variant *</Label>
+    <div className="space-y-4">
+      {/* Search Input with Dropdown */}
+      <div className="relative" ref={dropdownRef}>
+        <Label htmlFor="variantSearch" className="text-sm font-medium">
+          Search & Add Products
+        </Label>
+        <div className="relative mt-2">
+          <div className="flex gap-2">
             <Input
               id="variantSearch"
               placeholder="Search by product name, SKU, or ID..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              autoFocus
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setDropdownOpen(true);
+              }}
+              onFocus={() => setDropdownOpen(true)}
+              className="flex-1"
             />
-
-            {searchQuery && (
-              <div className="border rounded-md max-h-[250px] overflow-y-auto">
-                {isLoadingVariants ? (
-                  <div className="p-2 text-sm text-muted-foreground">
-                    Loading variants...
-                  </div>
-                ) : filteredVariants.length === 0 ? (
-                  <div className="p-2 text-sm text-muted-foreground">
-                    No variants found
-                  </div>
-                ) : (
-                  <div>
-                    {filteredVariants.map((variant) => (
-                      <button
-                        key={variant.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedVariant(variant);
-                          setSearchQuery("");
-                        }}
-                        className="w-full text-left p-3 hover:bg-muted transition-colors border-b last:border-b-0"
-                      >
-                        <div className="space-y-1">
-                          <div className="font-medium text-sm">
-                            {variant.productName || "Unknown Product"}
-                          </div>
-                          <div className="flex gap-2 items-center">
-                            <Badge variant="outline" className="text-xs">
-                              {variant.sku}
-                            </Badge>
-                            <span className="text-sm font-medium">
-                              ${variant.price.toFixed(2)}
-                            </span>
-                            <span
-                              className={`text-xs ${
-                                variant.stock > 0
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }`}
-                            >
-                              {variant.stock} in stock
-                            </span>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            <div className="flex gap-1 items-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-10 w-10 p-0"
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              >
+                −
+              </Button>
+              <span className="w-10 text-center text-sm font-medium">
+                {quantity}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-10 w-10 p-0"
+                onClick={() => setQuantity(quantity + 1)}
+              >
+                +
+              </Button>
+            </div>
           </div>
 
-          {/* Selected Variant Display */}
-          {selectedVariant && (
-            <div className="p-3 bg-muted rounded-md space-y-3">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="font-medium">
-                    {selectedVariant.productName || "Unknown Product"}
-                  </div>
-                  <Badge variant="outline" className="mt-2">
-                    {selectedVariant.sku}
-                  </Badge>
+          {/* Dropdown List */}
+          {dropdownOpen && (
+            <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-white shadow-lg z-50 max-h-[300px] overflow-y-auto">
+              {isLoadingVariants ? (
+                <div className="p-3 text-sm text-muted-foreground">
+                  Loading variants...
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedVariant(null)}
-                  className="text-xs text-primary hover:underline"
-                >
-                  Change
-                </button>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 text-sm pt-2 border-t">
+              ) : searchQuery && filteredVariants.length === 0 ? (
+                <div className="p-3 text-sm text-muted-foreground">
+                  No variants found
+                </div>
+              ) : (
                 <div>
-                  <span className="text-muted-foreground">Price</span>
-                  <div className="font-medium">
-                    ${selectedVariant.price.toFixed(2)}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">In Stock</span>
-                  <div
-                    className={
-                      selectedVariant.stock > 0
-                        ? "font-medium text-green-600"
-                        : "font-medium text-red-600"
-                    }
-                  >
-                    {selectedVariant.stock} units
-                  </div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <div className="font-medium">
-                    ${(selectedVariant.price * quantity).toFixed(2)}
-                  </div>
-                </div>
-              </div>
-
-              {selectedVariant.attributes &&
-                Object.keys(selectedVariant.attributes).length > 0 && (
-                  <div className="pt-2 border-t">
-                    <div className="text-xs font-medium text-muted-foreground mb-2">
-                      Attributes:
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(selectedVariant.attributes).map(
-                        ([key, value]) => (
-                          <Badge
-                            key={key}
-                            variant="secondary"
-                            className="text-xs"
-                          >
-                            {key}: {value}
+                  {(searchQuery ? filteredVariants : allVariants).map((variant) => (
+                    <button
+                      key={variant.id}
+                      type="button"
+                      onClick={() => handleSelectVariant(variant)}
+                      className="w-full text-left p-3 border-b last:border-b-0 transition-colors hover:bg-muted"
+                      disabled={quantity > variant.stock}
+                    >
+                      <div className="space-y-1">
+                        <div className="font-medium text-sm">
+                          {variant.productName || "Unknown Product"}
+                        </div>
+                        <div className="flex gap-2 items-center flex-wrap">
+                          <Badge variant="outline" className="text-xs">
+                            {variant.sku}
                           </Badge>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
-
-              {/* Quantity Input */}
-              <div className="space-y-2 pt-2 border-t">
-                <Label htmlFor="quantity">Quantity *</Label>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  >
-                    −
-                  </Button>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    min="1"
-                    max={selectedVariant.stock}
-                    value={quantity}
-                    onChange={(e) =>
-                      setQuantity(Math.max(1, parseInt(e.target.value) || 1))
-                    }
-                    className="flex-1 text-center"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setQuantity(Math.min(quantity + 1, selectedVariant.stock))
-                    }
-                  >
-                    +
-                  </Button>
-                </div>
-              </div>
-
-              {/* Error State */}
-              {quantity > selectedVariant.stock && (
-                <div className="rounded-md bg-red-50 border border-red-200 p-3 flex gap-2">
-                  <AlertCircle className="h-4 w-4 text-red-800 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-800">
-                    Quantity exceeds available stock ({selectedVariant.stock}{" "}
-                    available)
-                  </p>
+                          <span className="text-sm font-medium">
+                            ${variant.price.toFixed(2)}
+                          </span>
+                          <span
+                            className={`text-xs ${
+                              variant.stock > 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {variant.stock} in stock
+                          </span>
+                          {quantity > variant.stock && (
+                            <span className="text-xs text-red-600">
+                              Only {variant.stock} available
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
           )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 justify-end pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleAddItem}
-              disabled={
-                !selectedVariant ||
-                quantity <= 0 ||
-                quantity > selectedVariant.stock
-              }
-            >
-              Add to Order
-            </Button>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
