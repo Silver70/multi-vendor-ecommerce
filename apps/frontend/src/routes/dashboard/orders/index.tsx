@@ -170,7 +170,14 @@ function RouteComponent() {
       await updateOrder({
         data: {
           id: orderToUpdate,
-          order: { status: newStatus as "pending" | "paid" | "shipped" | "delivered" | "cancelled" },
+          order: {
+            status: newStatus as
+              | "pending"
+              | "paid"
+              | "shipped"
+              | "delivered"
+              | "cancelled",
+          },
         },
       });
 
@@ -335,9 +342,7 @@ function RouteComponent() {
                 View details
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() =>
-                  handleUpdateStatusClick(order.id, order.status)
-                }
+                onClick={() => handleUpdateStatusClick(order.id, order.status)}
                 disabled={order.status === "cancelled"}
               >
                 Update status
@@ -351,7 +356,9 @@ function RouteComponent() {
                 onClick={() => handleCancelOrderClick(order.id)}
                 disabled={order.status === "cancelled"}
               >
-                {order.status === "cancelled" ? "Already cancelled" : "Cancel order"}
+                {order.status === "cancelled"
+                  ? "Already cancelled"
+                  : "Cancel order"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -479,7 +486,10 @@ function RouteComponent() {
       </Dialog>
 
       {/* Update Status Dialog */}
-      <Dialog open={updateStatusDialogOpen} onOpenChange={setUpdateStatusDialogOpen}>
+      <Dialog
+        open={updateStatusDialogOpen}
+        onOpenChange={setUpdateStatusDialogOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Update Order Status</DialogTitle>
@@ -516,7 +526,10 @@ function RouteComponent() {
             </Button>
             <Button
               onClick={handleConfirmUpdateStatus}
-              disabled={isLoading || newStatus === orders.find((o) => o.id === orderToUpdate)?.status}
+              disabled={
+                isLoading ||
+                newStatus === orders.find((o) => o.id === orderToUpdate)?.status
+              }
             >
               {isLoading ? "Updating..." : "Update Status"}
             </Button>

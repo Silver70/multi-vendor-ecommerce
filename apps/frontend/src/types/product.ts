@@ -20,14 +20,25 @@ export type ProductVariant = {
   attributes?: Record<string, string>
 }
 
+export type ProductAttribute = {
+  name: string
+  values: string[]
+}
+
 export type ProductDetails = {
   id: string
   name: string
   slug: string
   description: string
+  categoryId: string
+  vendorId?: string
   categoryName: string
   vendorName: string
+  isActive: boolean
   variants: ProductVariant[]
+  attributes: ProductAttribute[]
   imageUrls: string[]
+  createdAt: string
+  updatedAt: string
 }
 

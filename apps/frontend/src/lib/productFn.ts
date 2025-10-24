@@ -202,3 +202,16 @@ export const getGlobalAttributesQueryOptions = queryOptions({
   queryKey: ["globalAttributes"],
   queryFn: () => getGlobalAttributes(),
 });
+
+// Update a composite product (with attributes and variants)
+export const updateCompositeProduct = createServerFn({ method: "POST" })
+  .inputValidator(
+    (d: { id: string; data: CreateCompositeProductDto }) => d
+  )
+  .handler(async ({ data: payload }) => {
+    const response = await axios.put<CompositeProductResponse>(
+      `${API_BASE_URL}/api/Products/${payload.id}/composite`,
+      payload.data
+    );
+    return response.data;
+  });
