@@ -123,7 +123,9 @@ function RouteComponent() {
               </h3>
               <div className="space-y-1">
                 <p className="text-sm font-medium">
-                  {orderResponse.customer?.fullName || orderResponse.address?.fullName || "N/A"}
+                  {orderResponse.customer?.fullName ||
+                    orderResponse.address?.fullName ||
+                    "N/A"}
                 </p>
                 {orderResponse.customer?.email && (
                   <p className="text-xs text-muted-foreground">

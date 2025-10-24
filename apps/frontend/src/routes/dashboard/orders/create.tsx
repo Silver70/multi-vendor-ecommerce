@@ -25,6 +25,7 @@ function RouteComponent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // External state for customer, address, and items
   const [selectedCustomer, setSelectedCustomer] =
     React.useState<CustomerDto | null>(null);
   const [selectedAddress, setSelectedAddress] =

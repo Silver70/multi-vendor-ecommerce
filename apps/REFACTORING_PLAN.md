@@ -6,7 +6,7 @@ This document outlines the phased approach to improving the frontend codebase by
 
 ---
 
-## Phase 1: React Hook Form Adoption (Week 1)
+## Phase 1: React Hook Form Adoption
 
 **Objective:** Reduce form state management complexity by 70%
 **Timeline:** 3-4 days
@@ -86,7 +86,9 @@ const {
 - **reset()** - Clear form after successful submission
 
 ### Special Note: Order Create Form
+
 The order create form is unique because it handles multiple entities (customer, address, order items) that aren't traditional form fields. The refactoring approach:
+
 - Use `useForm` to manage overall form state and validation
 - Keep `selectedCustomer` and `selectedAddress` as controlled component state (since they're returned from API calls)
 - Use form to manage `orderItems` array (map to hidden fields or manage via form context)
@@ -104,7 +106,7 @@ The order create form is unique because it handles multiple entities (customer, 
 
 ---
 
-## Phase 2: React Query Organization (Week 2)
+## Phase 2: React Query Organization
 
 **Objective:** Centralize and organize all API calls
 **Timeline:** 2-3 days
@@ -224,7 +226,7 @@ export const useUpdateProduct = () => {
 
 ---
 
-## Phase 3: Evaluation & Further Optimization (Week 3+)
+## Phase 3: Evaluation & Further Optimization
 
 **Objective:** Assess if additional state management is needed
 **Timeline:** Ongoing

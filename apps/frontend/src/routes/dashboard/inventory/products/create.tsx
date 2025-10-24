@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import { Plus, X, Trash2 } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
@@ -54,6 +55,15 @@ interface Attribute {
   values: AttributeValue[];
 }
 
+interface ProductFormData {
+  productName: string;
+  description: string;
+  categoryId: string;
+  vendorId: string;
+  basePrice: string;
+  isActive: boolean;
+}
+
 function RouteComponent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -66,21 +76,32 @@ function RouteComponent() {
   const vendors = vendorsResponse?.items || [];
   const availableGlobalAttributes = globalAttributes || [];
 
-  // Product Info State
-  const [productName, setProductName] = useState("");
-  const [description, setDescription] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [vendorId, setVendorId] = useState("");
-  const [basePrice, setBasePrice] = useState("");
-  const [isActive, setIsActive] = useState(true);
+  // React Hook Form - replaces 7 useState calls for product info
+  const {
+    register,
+    watch,
+    setValue,
+    handleSubmit,
+  } = useForm<ProductFormData>({
+    defaultValues: {
+      productName: "",
+      description: "",
+      categoryId: "",
+      vendorId: "",
+      basePrice: "",
+      isActive: true,
+    },
+  });
 
-  // Attributes State
-  const [attributes, setAttributes] = useState<Attribute[]>([]);
-  const [newAttributeName, setNewAttributeName] = useState("");
-  const [newAttributeValue, setNewAttributeValue] = useState("");
+  // Watch all form fields
+  const productName = watch("productName");
+  const basePrice = watch("basePrice");
 
-  // Variants State (auto-generated variants with pricing)
-  const [variants, setVariants] = useState<VariantInput[]>([]);
+  // Attributes and Variants State (complex nested state, kept in React.useState)
+  const [attributes, setAttributes] = React.useState<Attribute[]>([]);
+  const [newAttributeName, setNewAttributeName] = React.useState("");
+  const [newAttributeValue, setNewAttributeValue] = React.useState("");
+  const [variants, setVariants] = React.useState<VariantInput[]>([]);
 
   // Create Product Mutation
   const createProductMutation = useMutation({
@@ -223,7 +244,6 @@ function RouteComponent() {
 
     setVariants(newVariants);
   };
-  
 
   // Update variant
   const updateVariant = (
@@ -241,18 +261,16 @@ function RouteComponent() {
     setVariants(variants.filter((_, i) => i !== index));
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  // Handle form submission with React Hook Form
+  const onSubmit = handleSubmit(async (formData) => {
     const productData: CreateCompositeProductDto = {
       productInfo: {
-        name: productName,
-        description: description || undefined,
-        categoryId,
-        vendorId: vendorId || undefined,
-        price: parseFloat(basePrice),
-        isActive,
+        name: formData.productName,
+        description: formData.description || undefined,
+        categoryId: formData.categoryId,
+        vendorId: formData.vendorId || undefined,
+        price: parseFloat(formData.basePrice),
+        isActive: formData.isActive,
       },
       attributes: attributes.map((attr) => ({
         name: attr.name,
@@ -266,7 +284,7 @@ function RouteComponent() {
     };
 
     createProductMutation.mutate(productData);
-  };
+  });
 
   return (
     <div className="container mx-auto py-6 max-w-5xl">
@@ -279,7 +297,7 @@ function RouteComponent() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={onSubmit} className="space-y-6">
         {/* Product Information */}
         <Card>
           <CardHeader>
@@ -295,9 +313,7 @@ function RouteComponent() {
                 <Input
                   id="name"
                   placeholder="e.g., Premium Cotton T-Shirt"
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  required
+                  {...register("productName", { required: true })}
                 />
               </div>
 
@@ -311,9 +327,7 @@ function RouteComponent() {
                   step="0.01"
                   min="0.01"
                   placeholder="0.00"
-                  value={basePrice}
-                  onChange={(e) => setBasePrice(e.target.value)}
-                  required
+                  {...register("basePrice", { required: true })}
                 />
               </div>
             </div>
@@ -323,8 +337,7 @@ function RouteComponent() {
               <Textarea
                 id="description"
                 placeholder="Describe your product..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                {...register("description")}
                 rows={4}
               />
             </div>
@@ -335,8 +348,7 @@ function RouteComponent() {
                   Category <span className="text-red-500">*</span>
                 </Label>
                 <Select
-                  value={categoryId}
-                  onValueChange={setCategoryId}
+                  onValueChange={(value) => setValue("categoryId", value)}
                   required
                 >
                   <SelectTrigger id="category">
@@ -356,7 +368,10 @@ function RouteComponent() {
                 <Label htmlFor="vendor">
                   Vendor <span className="text-red-500">*</span>
                 </Label>
-                <Select value={vendorId} onValueChange={setVendorId} required>
+                <Select
+                  onValueChange={(value) => setValue("vendorId", value)}
+                  required
+                >
                   <SelectTrigger id="vendor">
                     <SelectValue placeholder="Select a vendor" />
                   </SelectTrigger>
@@ -375,8 +390,7 @@ function RouteComponent() {
               <input
                 type="checkbox"
                 id="isActive"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
+                {...register("isActive")}
                 className="h-4 w-4 rounded border-gray-300"
               />
               <Label htmlFor="isActive" className="cursor-pointer">

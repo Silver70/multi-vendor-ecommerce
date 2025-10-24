@@ -27,7 +27,6 @@ interface ProductVariantSearchProps {
 export function ProductVariantSearch({ onAddItem, currentOrderItems = [] }: ProductVariantSearchProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
-  const [quantity, setQuantity] = React.useState(1);
   const [recentlyAddedIds, setRecentlyAddedIds] = React.useState<Set<string>>(new Set());
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
@@ -68,11 +67,6 @@ export function ProductVariantSearch({ onAddItem, currentOrderItems = [] }: Prod
   }, []);
 
   const handleSelectVariant = (variant: ProductVariant) => {
-    // Immediately add the variant to order items
-    if (quantity > variant.stock) {
-      return;
-    }
-
     const itemId = `${Date.now()}-${Math.random()}`;
     onAddItem({
       id: itemId,
@@ -81,8 +75,8 @@ export function ProductVariantSearch({ onAddItem, currentOrderItems = [] }: Prod
       variantId: variant.id,
       variantSku: variant.sku,
       price: variant.price,
-      quantity,
-      subtotal: variant.price * quantity,
+      quantity: 1,
+      subtotal: variant.price,
     });
 
     // Highlight the added variant
@@ -91,8 +85,6 @@ export function ProductVariantSearch({ onAddItem, currentOrderItems = [] }: Prod
     setRecentlyAddedIds(newRecentlyAdded);
 
     // Keep search query and dropdown open so user can select more variants
-    // Only reset quantity to 1 for next selection
-    setQuantity(1);
   };
 
   return (
@@ -103,42 +95,17 @@ export function ProductVariantSearch({ onAddItem, currentOrderItems = [] }: Prod
           Search & Add Products
         </Label>
         <div className="relative mt-2">
-          <div className="flex gap-2">
-            <Input
-              id="variantSearch"
-              placeholder="Search by product name, SKU, or ID..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setDropdownOpen(true);
-              }}
-              onFocus={() => setDropdownOpen(true)}
-              className="flex-1"
-            />
-            <div className="flex gap-1 items-center">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-10 w-10 p-0"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              >
-                −
-              </Button>
-              <span className="w-10 text-center text-sm font-medium">
-                {quantity}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-10 w-10 p-0"
-                onClick={() => setQuantity(quantity + 1)}
-              >
-                +
-              </Button>
-            </div>
-          </div>
+          <Input
+            id="variantSearch"
+            placeholder="Search by product name, SKU, or ID..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setDropdownOpen(true);
+            }}
+            onFocus={() => setDropdownOpen(true)}
+            className="w-full"
+          />
 
           {/* Dropdown List */}
           {dropdownOpen && (
@@ -165,7 +132,6 @@ export function ProductVariantSearch({ onAddItem, currentOrderItems = [] }: Prod
                             ? "bg-green-100 hover:bg-green-150"
                             : "hover:bg-muted"
                         }`}
-                        disabled={quantity > variant.stock}
                       >
                         <div className="space-y-1">
                           <div className="font-medium text-sm">
@@ -187,11 +153,6 @@ export function ProductVariantSearch({ onAddItem, currentOrderItems = [] }: Prod
                             >
                               {variant.stock} in stock
                             </span>
-                            {quantity > variant.stock && (
-                              <span className="text-xs text-red-600">
-                                Only {variant.stock} available
-                              </span>
-                            )}
                           </div>
                         </div>
                       </button>
