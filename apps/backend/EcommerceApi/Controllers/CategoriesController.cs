@@ -28,7 +28,9 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                var query = _context.Categories.AsQueryable();
+                var query = _context.Categories
+                    .Include(c => c.Products)
+                    .AsQueryable();
 
                 // Apply filters
                 if (!string.IsNullOrWhiteSpace(filterParams.Name))
@@ -64,7 +66,8 @@ namespace EcommerceApi.Controllers
                         ParentId = c.ParentId,
                         Name = c.Name,
                         Slug = c.Slug,
-                        ParentName = c.Parent != null ? c.Parent.Name : null
+                        ParentName = c.Parent != null ? c.Parent.Name : null,
+                        ProductCount = c.Products != null ? c.Products.Count : 0
                     })
                     .ToListAsync();
 
@@ -96,6 +99,7 @@ namespace EcommerceApi.Controllers
             try
             {
                 var category = await _context.Categories
+                    .Include(c => c.Products)
                     .Where(c => c.Id == id)
                     .Select(c => new CategoryDto
                     {
@@ -103,7 +107,8 @@ namespace EcommerceApi.Controllers
                         ParentId = c.ParentId,
                         Name = c.Name,
                         Slug = c.Slug,
-                        ParentName = c.Parent != null ? c.Parent.Name : null
+                        ParentName = c.Parent != null ? c.Parent.Name : null,
+                        ProductCount = c.Products != null ? c.Products.Count : 0
                     })
                     .FirstOrDefaultAsync();
 

@@ -24,6 +24,7 @@ export interface Category {
   name: string;
   slug: string;
   parentName?: string;
+  productCount: number;
 }
 
 // ============================================================================
