@@ -17,6 +17,7 @@ export interface OrderItemInput {
   price: number;
   quantity: number;
   subtotal: number;
+  stock: number;
 }
 
 interface ProductVariantSearchProps {
@@ -77,6 +78,7 @@ export function ProductVariantSearch({ onAddItem, currentOrderItems = [] }: Prod
       price: variant.price,
       quantity: 1,
       subtotal: variant.price,
+      stock: variant.stock,
     });
 
     // Highlight the added variant

@@ -29,6 +29,7 @@ export function OrderItemsSummary({
 }: OrderItemsSummaryProps) {
   const [editingItemId, setEditingItemId] = React.useState<string | null>(null)
   const [editQuantity, setEditQuantity] = React.useState(1)
+  const [quantityError, setQuantityError] = React.useState<string | null>(null)
 
   const totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0)
 
@@ -38,10 +39,35 @@ export function OrderItemsSummary({
   }
 
   const handleSaveQuantity = (itemId: string) => {
-    if (editQuantity > 0) {
-      onUpdateQuantity(itemId, editQuantity)
+    const item = items.find(i => i.id === itemId)
+    if (!item) {
+      setEditingItemId(null)
+      setQuantityError(null)
+      return
     }
+
+    // Validate quantity
+    if (editQuantity <= 0) {
+      setQuantityError("Quantity must be at least 1")
+      return
+    }
+
+    if (editQuantity > item.stock) {
+      setQuantityError(`Only ${item.stock} in stock`)
+      return
+    }
+
+    onUpdateQuantity(itemId, editQuantity)
     setEditingItemId(null)
+    setQuantityError(null)
+  }
+
+  const handleQuantityChange = (value: number, item: OrderItemInput) => {
+    setEditQuantity(value)
+    // Clear error when user starts typing
+    if (value > 0 && value <= item.stock) {
+      setQuantityError(null)
+    }
   }
 
   if (items.length === 0) {
@@ -92,24 +118,34 @@ export function OrderItemsSummary({
                   </TableCell>
                   <TableCell>${item.price.toFixed(2)}</TableCell>
                   <TableCell>
-                    <div className="flex justify-center">
+                    <div className="flex flex-col items-center gap-1">
                       {editingItemId === item.id ? (
                         <div className="flex gap-1">
-                          <Input
-                            type="number"
-                            min="1"
-                            value={editQuantity}
-                            onChange={(e) => setEditQuantity(parseInt(e.target.value) || 1)}
-                            className="w-16 text-center"
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleSaveQuantity(item.id)}
-                          >
-                            Save
-                          </Button>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex gap-1">
+                              <Input
+                                type="number"
+                                min="1"
+                                max={item.stock}
+                                value={editQuantity}
+                                onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1, item)}
+                                className={`w-16 text-center ${quantityError ? 'border-red-500' : ''}`}
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleSaveQuantity(item.id)}
+                                disabled={editQuantity <= 0 || editQuantity > item.stock}
+                              >
+                                Save
+                              </Button>
+                            </div>
+                            {quantityError && (
+                              <span className="text-xs text-red-600">{quantityError}</span>
+                            )}
+                            <span className="text-xs text-muted-foreground">Max: {item.stock}</span>
+                          </div>
                         </div>
                       ) : (
                         <span className="font-medium">{item.quantity}</span>
@@ -202,21 +238,29 @@ export function OrderItemsSummary({
               </div>
 
               {editingItemId === item.id && (
-                <div className="flex gap-2 pt-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    value={editQuantity}
-                    onChange={(e) => setEditQuantity(parseInt(e.target.value) || 1)}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => handleSaveQuantity(item.id)}
-                  >
-                    Save
-                  </Button>
+                <div className="flex flex-col gap-2 pt-2">
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      min="1"
+                      max={item.stock}
+                      value={editQuantity}
+                      onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1, item)}
+                      className={`flex-1 ${quantityError ? 'border-red-500' : ''}`}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleSaveQuantity(item.id)}
+                      disabled={editQuantity <= 0 || editQuantity > item.stock}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                  {quantityError && (
+                    <span className="text-xs text-red-600">{quantityError}</span>
+                  )}
+                  <span className="text-xs text-muted-foreground">Available: {item.stock}</span>
                 </div>
               )}
             </div>
