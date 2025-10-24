@@ -19,7 +19,7 @@ import {
 } from "~/components/ui/table";
 
 export const Route = createFileRoute(
-  "/dashboard/inventory/products/$productId"
+  "/dashboard/inventory/products/$productId/"
 )({
   beforeLoad(ctx) {
     const { queryClient } = ctx.context;

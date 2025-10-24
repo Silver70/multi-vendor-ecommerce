@@ -188,18 +188,21 @@ namespace EcommerceApi.Controllers
 
                 await _context.SaveChangesAsync();
 
-                // Delete old variants and create new ones
-                await _variantService.DeleteProductVariantsAsync(product.Id);
-
+                // Delete old variants and create new ones only if variants are provided
                 List<Models.ProductVariant> variants = new();
-                if (updateDto.Attributes.Any() && updateDto.Variants.Any())
+                if (updateDto.Variants.Any())
                 {
-                    var attributeValueMap = await _variantService.ProcessAttributesAsync(updateDto.Attributes);
-                    variants = await _variantService.CreateVariantsAsync(
-                        product.Id,
-                        product.Name,
-                        updateDto.Variants,
-                        attributeValueMap);
+                    await _variantService.DeleteProductVariantsAsync(product.Id);
+
+                    if (updateDto.Attributes.Any())
+                    {
+                        var attributeValueMap = await _variantService.ProcessAttributesAsync(updateDto.Attributes);
+                        variants = await _variantService.CreateVariantsAsync(
+                            product.Id,
+                            product.Name,
+                            updateDto.Variants,
+                            attributeValueMap);
+                    }
                 }
 
                 await transaction.CommitAsync();
@@ -352,15 +355,21 @@ namespace EcommerceApi.Controllers
                     Name = product.Name,
                     Slug = product.Slug,
                     Description = product.Description ?? "",
+                    CategoryId = product.CategoryId,
+                    VendorId = product.VendorId,
                     CategoryName = product.Category != null ? product.Category.Name : "",
                     VendorName = product.Vendor != null ? product.Vendor.Name : "",
+                    IsActive = product.IsActive,
                     ImageUrls = product.Images != null ? product.Images.Select(i => i.ImageUrl).ToList() : new List<string>(),
+                    Attributes = new List<ProductAttributeOutputDto>(),
                     Variants = new List<VariantDto>()
                 };
 
-                // Load variants with attributes
+                // Load variants with attributes and build product attributes list
                 if (product.Variants != null)
                 {
+                    var attributeDict = new Dictionary<string, HashSet<string>>();
+
                     foreach (var variant in product.Variants)
                     {
                         var attrs = await _variantService.LoadVariantAttributesAsync(variant.Id);
@@ -371,6 +380,26 @@ namespace EcommerceApi.Controllers
                             Price = variant.Price,
                             Stock = variant.Stock,
                             Attributes = attrs
+                        });
+
+                        // Collect unique attribute names and values
+                        foreach (var (key, value) in attrs)
+                        {
+                            if (!attributeDict.ContainsKey(key))
+                            {
+                                attributeDict[key] = new HashSet<string>();
+                            }
+                            attributeDict[key].Add(value);
+                        }
+                    }
+
+                    // Build product attributes from collected data
+                    foreach (var (attrName, values) in attributeDict)
+                    {
+                        productDto.Attributes.Add(new ProductAttributeOutputDto
+                        {
+                            Name = attrName,
+                            Values = values.ToList()
                         });
                     }
                 }
@@ -412,15 +441,21 @@ namespace EcommerceApi.Controllers
                     Name = product.Name,
                     Slug = product.Slug,
                     Description = product.Description ?? "",
+                    CategoryId = product.CategoryId,
+                    VendorId = product.VendorId,
                     CategoryName = product.Category != null ? product.Category.Name : "",
                     VendorName = product.Vendor != null ? product.Vendor.Name : "",
+                    IsActive = product.IsActive,
                     ImageUrls = product.Images != null ? product.Images.Select(i => i.ImageUrl).ToList() : new List<string>(),
+                    Attributes = new List<ProductAttributeOutputDto>(),
                     Variants = new List<VariantDto>()
                 };
 
-                // Load variants with attributes
+                // Load variants with attributes and build product attributes list
                 if (product.Variants != null)
                 {
+                    var attributeDict = new Dictionary<string, HashSet<string>>();
+
                     foreach (var variant in product.Variants)
                     {
                         var attrs = await _variantService.LoadVariantAttributesAsync(variant.Id);
@@ -431,6 +466,26 @@ namespace EcommerceApi.Controllers
                             Price = variant.Price,
                             Stock = variant.Stock,
                             Attributes = attrs
+                        });
+
+                        // Collect unique attribute names and values
+                        foreach (var (key, value) in attrs)
+                        {
+                            if (!attributeDict.ContainsKey(key))
+                            {
+                                attributeDict[key] = new HashSet<string>();
+                            }
+                            attributeDict[key].Add(value);
+                        }
+                    }
+
+                    // Build product attributes from collected data
+                    foreach (var (attrName, values) in attributeDict)
+                    {
+                        productDto.Attributes.Add(new ProductAttributeOutputDto
+                        {
+                            Name = attrName,
+                            Values = values.ToList()
                         });
                     }
                 }

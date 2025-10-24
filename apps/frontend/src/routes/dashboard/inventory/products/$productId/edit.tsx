@@ -64,9 +64,12 @@ function RouteComponent() {
   const queryClient = useQueryClient();
 
   // Queries
-  const { data: product, isLoading, isError, error } = useQuery(
-    getProductQueryOptions(productId)
-  );
+  const {
+    data: product,
+    isLoading,
+    isError,
+    error,
+  } = useQuery(getProductQueryOptions(productId));
   const { data: categoriesResponse } = useQuery(getCategoriesQueryOptions);
   const { data: vendorsResponse } = useQuery(getVendorsQueryOptions);
   const { data: globalAttributes } = useQuery(getGlobalAttributesQueryOptions);
@@ -101,20 +104,18 @@ function RouteComponent() {
       setIsActive(product.isActive);
 
       // Convert product attributes to internal format
-      const loadedAttributes: Attribute[] = product.attributes.map(
-        (attr) => ({
+      const loadedAttributes: Attribute[] = (product.attributes || []).map((attr) => ({
+        id: Math.random().toString(36).substring(2, 11),
+        name: attr.name,
+        values: attr.values.map((v) => ({
           id: Math.random().toString(36).substring(2, 11),
-          name: attr.name,
-          values: attr.values.map((v) => ({
-            id: Math.random().toString(36).substring(2, 11),
-            value: v,
-          })),
-        })
-      );
+          value: v,
+        })),
+      }));
       setAttributes(loadedAttributes);
 
       // Load variants
-      const loadedVariants: VariantInput[] = product.variants.map((v) => ({
+      const loadedVariants: VariantInput[] = (product.variants || []).map((v) => ({
         sku: v.sku,
         price: v.price,
         stock: v.stock,
@@ -131,7 +132,10 @@ function RouteComponent() {
 
   // Update Product Mutation
   const updateProductMutation = useMutation({
-    mutationFn: async (payload: { id: string; data: CreateCompositeProductDto }) => {
+    mutationFn: async (payload: {
+      id: string;
+      data: CreateCompositeProductDto;
+    }) => {
       return await updateCompositeProduct({ data: payload });
     },
     onSuccess: () => {
@@ -292,6 +296,22 @@ function RouteComponent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate required fields
+    if (!productName.trim()) {
+      alert("Product name is required");
+      return;
+    }
+
+    if (!categoryId) {
+      alert("Category is required");
+      return;
+    }
+
+    if (!basePrice || parseFloat(basePrice) <= 0) {
+      alert("Base price must be greater than 0");
+      return;
+    }
+
     const productData: CreateCompositeProductDto = {
       productInfo: {
         name: productName,
@@ -435,12 +455,12 @@ function RouteComponent() {
 
               <div className="space-y-2">
                 <Label htmlFor="vendor">Vendor</Label>
-                <Select value={vendorId} onValueChange={setVendorId}>
+                <Select value={vendorId || "none"} onValueChange={(val) => setVendorId(val === "none" ? "" : val)}>
                   <SelectTrigger id="vendor">
                     <SelectValue placeholder="Select a vendor (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No vendor</SelectItem>
+                    <SelectItem value="none">No vendor</SelectItem>
                     {vendors.map((vendor) => (
                       <SelectItem key={vendor.id} value={vendor.id}>
                         {vendor.name}
@@ -510,7 +530,9 @@ function RouteComponent() {
 
             {/* Add Custom Attribute */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Create Custom Attribute</label>
+              <label className="text-sm font-medium">
+                Create Custom Attribute
+              </label>
               <div className="flex gap-2">
                 <Input
                   placeholder="Attribute name (e.g., Material, Brand)"
@@ -606,7 +628,9 @@ function RouteComponent() {
                                 ? newAttributeValue
                                 : ""
                             }
-                            onChange={(e) => setNewAttributeValue(e.target.value)}
+                            onChange={(e) =>
+                              setNewAttributeValue(e.target.value)
+                            }
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
                                 e.preventDefault();
@@ -639,8 +663,9 @@ function RouteComponent() {
               attributes.every((a) => a.values.length > 0) && (
                 <div className="rounded-md bg-amber-50 border border-amber-200 p-4 mb-4">
                   <p className="text-sm text-amber-800 mb-3">
-                    Modifying attributes will regenerate all variant combinations.
-                    Existing variant prices and stock will be reset.
+                    Modifying attributes will regenerate all variant
+                    combinations. Existing variant prices and stock will be
+                    reset.
                   </p>
                   <Button
                     type="button"
@@ -780,7 +805,9 @@ function RouteComponent() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate({ to: `/dashboard/inventory/products/${productId}` })}
+            onClick={() =>
+              navigate({ to: `/dashboard/inventory/products/${productId}` })
+            }
           >
             Cancel
           </Button>

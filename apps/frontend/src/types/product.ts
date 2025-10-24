@@ -38,7 +38,5 @@ export type ProductDetails = {
   variants: ProductVariant[]
   attributes: ProductAttribute[]
   imageUrls: string[]
-  createdAt: string
-  updatedAt: string
 }
 

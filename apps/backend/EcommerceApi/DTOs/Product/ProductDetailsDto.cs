@@ -7,8 +7,12 @@ namespace EcommerceApi.DTOs.Product
     public string Name { get; set; } = "";
     public string Slug { get; set; } = "";
     public string Description { get; set; } = "";
+    public Guid CategoryId { get; set; }
+    public Guid? VendorId { get; set; }
     public string CategoryName { get; set; } = "";
     public string VendorName { get; set; } = "";
+    public bool IsActive { get; set; }
+    public List<ProductAttributeOutputDto> Attributes { get; set; } = new();
     public List<VariantDto> Variants { get; set; } = new();
     public List<string> ImageUrls { get; set; } = new();
 }
