@@ -109,7 +109,7 @@ export const createAddress = createServerFn({ method: "POST" })
   });
 
 // Update an existing address
-export const updateAddress = createServerFn({ method: "PUT" })
+export const updateAddress = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string; data: UpdateAddressDto }) => d)
   .handler(async ({ data }) => {
     const response = await axios.put<AddressDto>(

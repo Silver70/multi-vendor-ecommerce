@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
-  getCustomerAddressesQueryOptions,
-  AddressDto,
-  createAddress,
-  CreateAddressDto,
-} from "~/lib/addressFn";
+  addressQueries,
+  useCreateAddress,
+  type AddressDto,
+  type CreateAddressDto,
+} from "~/lib/queries";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -52,16 +52,14 @@ export function AddressSelect({
     phone: "",
   });
 
-  const queryClient = useQueryClient();
-
   const { data: addressesData, isLoading } = useQuery(
     customerId
-      ? getCustomerAddressesQueryOptions(customerId)
-      : {
+      ? addressQueries.getForCustomer(customerId)
+      : (({
           queryKey: ["addresses", "null"],
-          queryFn: async () => ({ items: [] }) as any,
+          queryFn: async () => ({ items: [] } as any),
           enabled: false,
-        }
+        } as any) as ReturnType<typeof addressQueries.getForCustomer>)
   );
 
   const addresses = addressesData?.items || [];
@@ -73,29 +71,9 @@ export function AddressSelect({
     }
   }, [customerId, addresses, value, onValueChange]);
 
-  const createAddressMutation = useMutation({
-    mutationFn: async (data: CreateAddressDto) => {
-      return await createAddress({ data });
-    },
-    onSuccess: (newAddress) => {
-      queryClient.invalidateQueries({
-        queryKey: ["addresses", "customer", customerId],
-      });
-      onValueChange(newAddress);
-      setShowCreateForm(false);
-      setFormData({
-        fullName: "",
-        line1: "",
-        line2: "",
-        city: "",
-        postalCode: "",
-        country: "",
-        phone: "",
-      });
-    },
-  });
+  const createAddressMutation = useCreateAddress();
 
-  const handleCreateAddress = async () => {
+  const handleCreateAddress = () => {
     if (!customerId) return;
 
     if (
@@ -107,10 +85,27 @@ export function AddressSelect({
       return;
     }
 
-    createAddressMutation.mutate({
-      customerId,
-      ...formData,
-    });
+    createAddressMutation.mutate(
+      {
+        customerId,
+        ...formData,
+      },
+      {
+        onSuccess: (newAddress) => {
+          onValueChange(newAddress);
+          setShowCreateForm(false);
+          setFormData({
+            fullName: "",
+            line1: "",
+            line2: "",
+            city: "",
+            postalCode: "",
+            country: "",
+            phone: "",
+          });
+        },
+      }
+    );
   };
 
   if (!customerId) {

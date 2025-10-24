@@ -39,14 +39,14 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { DataTable } from "~/components/data-table";
-import { Order, getOrdersQueryOptions, updateOrder } from "~/lib/ordersFn";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { orderQueries, useUpdateOrder, type Order } from "~/lib/queries";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/orders/")({
   component: RouteComponent,
   loader: ({ context }) => {
     const { queryClient } = context;
-    queryClient.prefetchQuery(getOrdersQueryOptions);
+    queryClient.prefetchQuery(orderQueries.getAll());
   },
 });
 
@@ -87,23 +87,25 @@ const formatDate = (dateString: string) => {
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
   const [updateStatusDialogOpen, setUpdateStatusDialogOpen] = useState(false);
   const [orderToUpdate, setOrderToUpdate] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState<string>("");
+
   const {
     data: ordersResponse,
     isLoading: isQueryLoading,
     error: queryError,
-  } = useQuery(getOrdersQueryOptions);
+  } = useQuery(orderQueries.getAll());
+
+  const updateOrderMutation = useUpdateOrder();
 
   const orders = ordersResponse?.items || [];
+  const isLoading = updateOrderMutation.isPending;
 
   if (isQueryLoading) return <div>Loading...</div>;
 
@@ -114,35 +116,29 @@ function RouteComponent() {
     setCancelDialogOpen(true);
   };
 
-  const handleConfirmCancelOrder = async () => {
+  const handleConfirmCancelOrder = () => {
     if (!orderToCancel) return;
-
-    setIsLoading(true);
     setError(null);
 
-    try {
-      await updateOrder({
-        data: {
-          id: orderToCancel,
-          order: { status: "cancelled" },
+    updateOrderMutation.mutate(
+      {
+        id: orderToCancel,
+        order: { status: "cancelled" },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Order cancelled successfully");
+          setCancelDialogOpen(false);
+          setOrderToCancel(null);
         },
-      });
-
-      // Invalidate and refetch orders
-      await queryClient.invalidateQueries(getOrdersQueryOptions);
-
-      // Show success toast
-      toast.success("Order cancelled successfully");
-      setCancelDialogOpen(false);
-      setOrderToCancel(null);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to cancel order";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+        onError: (err) => {
+          const errorMessage =
+            err instanceof Error ? err.message : "Failed to cancel order";
+          setError(errorMessage);
+          toast.error(errorMessage);
+        },
+      }
+    );
   };
 
   const handleUpdateStatusClick = (orderId: string, currentStatus: string) => {
@@ -151,7 +147,7 @@ function RouteComponent() {
     setUpdateStatusDialogOpen(true);
   };
 
-  const handleConfirmUpdateStatus = async () => {
+  const handleConfirmUpdateStatus = () => {
     if (!orderToUpdate || !newStatus) return;
 
     const currentOrder = orders.find((o) => o.id === orderToUpdate);
@@ -163,40 +159,37 @@ function RouteComponent() {
       return;
     }
 
-    setIsLoading(true);
     setError(null);
 
-    try {
-      await updateOrder({
-        data: {
-          id: orderToUpdate,
-          order: {
-            status: newStatus as
-              | "pending"
-              | "paid"
-              | "shipped"
-              | "delivered"
-              | "cancelled",
-          },
+    updateOrderMutation.mutate(
+      {
+        id: orderToUpdate,
+        order: {
+          status: newStatus as
+            | "pending"
+            | "paid"
+            | "shipped"
+            | "delivered"
+            | "cancelled",
         },
-      });
-
-      // Invalidate and refetch orders
-      await queryClient.invalidateQueries(getOrdersQueryOptions);
-
-      // Show success toast
-      toast.success(`Order status updated to ${newStatus}`);
-      setUpdateStatusDialogOpen(false);
-      setOrderToUpdate(null);
-      setNewStatus("");
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to update order status";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          toast.success(`Order status updated to ${newStatus}`);
+          setUpdateStatusDialogOpen(false);
+          setOrderToUpdate(null);
+          setNewStatus("");
+        },
+        onError: (err) => {
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : "Failed to update order status";
+          setError(errorMessage);
+          toast.error(errorMessage);
+        },
+      }
+    );
   };
 
   const columns: ColumnDef<Order>[] = [

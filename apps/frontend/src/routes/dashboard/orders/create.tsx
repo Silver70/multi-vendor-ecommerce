@@ -10,9 +10,7 @@ import {
   OrderItemInput,
 } from "~/components/ProductVariantSearch";
 import { OrderItemsSummary } from "~/components/OrderItemsSummary";
-import { createOrder, CreateOrderDto } from "~/lib/ordersFn";
-import { CustomerDto } from "~/lib/customersFn";
-import { AddressDto } from "~/lib/addressFn";
+import { useCreateOrder, type CreateOrderDto, type CustomerDto, type AddressDto } from "~/lib/queries";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { AlertCircle, CheckCircle } from "lucide-react";
@@ -23,7 +21,6 @@ export const Route = createFileRoute("/dashboard/orders/create")({
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   // External state for customer, address, and items
   const [selectedCustomer, setSelectedCustomer] =
@@ -32,17 +29,7 @@ function RouteComponent() {
     React.useState<AddressDto | null>(null);
   const [orderItems, setOrderItems] = React.useState<OrderItemInput[]>([]);
 
-  const createOrderMutation = useMutation({
-    mutationFn: async (data: CreateOrderDto) => {
-      return await createOrder({ data });
-    },
-    onSuccess: (createdOrder) => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      navigate({
-        to: `/dashboard/orders/${createdOrder.id}`,
-      });
-    },
-  });
+  const createOrderMutation = useCreateOrder();
 
   const handleAddItem = (item: OrderItemInput) => {
     setOrderItems([...orderItems, item]);
@@ -83,7 +70,11 @@ function RouteComponent() {
       })),
     };
 
-    createOrderMutation.mutate(orderData);
+    createOrderMutation.mutate(orderData, {
+      onSuccess: (createdOrder) => {
+        navigate({ to: `/dashboard/orders/${createdOrder.id}` });
+      },
+    });
   };
 
   const isFormValid =

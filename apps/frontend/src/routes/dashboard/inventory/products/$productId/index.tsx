@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getProductQueryOptions } from "~/lib/productFn";
+import { productQueries } from "~/lib/queries";
 import {
   Card,
   CardContent,
@@ -24,7 +24,7 @@ export const Route = createFileRoute(
   beforeLoad(ctx) {
     const { queryClient } = ctx.context;
     const product = queryClient.ensureQueryData(
-      getProductQueryOptions(ctx.params.productId)
+      productQueries.getById(ctx.params.productId)
     );
     return product;
   },
@@ -33,7 +33,7 @@ export const Route = createFileRoute(
 
 function RouteComponent() {
   const { data: product } = useQuery(
-    getProductQueryOptions(Route.useParams().productId)
+    productQueries.getById(Route.useParams().productId)
   );
 
   if (!product) {

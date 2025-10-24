@@ -30,20 +30,19 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Product } from "~/types/product";
-import { getProductsQueryOptions, deleteProduct } from "~/lib/productFn";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { productQueries, useDeleteProduct } from "~/lib/queries";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/inventory/products/")({
   component: RouteComponent,
   loader: ({ context }) => {
     const { queryClient } = context;
-    queryClient.prefetchQuery(getProductsQueryOptions);
+    queryClient.prefetchQuery(productQueries.getAll());
   },
 });
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -52,21 +51,15 @@ function RouteComponent() {
     productName: string;
   } | null>(null);
 
-  const { data: productsResponse, isLoading } = useQuery(
-    getProductsQueryOptions
+  const { data: productsResponse, isLoading: isQueryLoading } = useQuery(
+    productQueries.getAll()
   );
 
-  const deleteProductMutation = useMutation({
-    mutationFn: (productId: string) => deleteProduct({ data: productId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      setDeleteConfirmation(null);
-    },
-  });
+  const deleteProductMutation = useDeleteProduct();
 
   const products = productsResponse?.items || [];
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isQueryLoading) return <div>Loading...</div>;
 
   const columns: ColumnDef<Product>[] = [
     {

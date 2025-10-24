@@ -24,16 +24,16 @@ import {
 } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 
-import { getCategoriesQueryOptions } from "~/lib/categoryFn";
-import { getVendorsQueryOptions } from "~/lib/vendorFn";
 import {
-  getProductQueryOptions,
-  updateCompositeProduct,
-  getGlobalAttributesQueryOptions,
+  productQueries,
+  categoryQueries,
+  vendorQueries,
+  attributeQueries,
+  useUpdateProduct,
   type CreateCompositeProductDto,
   type VariantInput,
   type GlobalAttribute,
-} from "~/lib/productFn";
+} from "~/lib/queries";
 
 export const Route = createFileRoute(
   "/dashboard/inventory/products/$productId/edit"
@@ -41,10 +41,10 @@ export const Route = createFileRoute(
   component: RouteComponent,
   loader: ({ context, params }) => {
     const { queryClient } = context;
-    queryClient.prefetchQuery(getProductQueryOptions(params.productId));
-    queryClient.prefetchQuery(getCategoriesQueryOptions);
-    queryClient.prefetchQuery(getVendorsQueryOptions);
-    queryClient.prefetchQuery(getGlobalAttributesQueryOptions);
+    queryClient.prefetchQuery(productQueries.getById(params.productId));
+    queryClient.prefetchQuery(categoryQueries.getAll());
+    queryClient.prefetchQuery(vendorQueries.getAll());
+    queryClient.prefetchQuery(attributeQueries.getAll());
   },
 });
 
@@ -79,10 +79,10 @@ function RouteComponent() {
     isLoading,
     isError,
     error,
-  } = useQuery(getProductQueryOptions(productId));
-  const { data: categoriesResponse } = useQuery(getCategoriesQueryOptions);
-  const { data: vendorsResponse } = useQuery(getVendorsQueryOptions);
-  const { data: globalAttributes } = useQuery(getGlobalAttributesQueryOptions);
+  } = useQuery(productQueries.getById(productId));
+  const { data: categoriesResponse } = useQuery(categoryQueries.getAll());
+  const { data: vendorsResponse } = useQuery(vendorQueries.getAll());
+  const { data: globalAttributes } = useQuery(attributeQueries.getAll());
 
   const categories = categoriesResponse?.items || [];
   const vendors = vendorsResponse?.items || [];
@@ -154,19 +154,7 @@ function RouteComponent() {
   }, [product, categories, vendors, setValue]);
 
   // Update Product Mutation
-  const updateProductMutation = useMutation({
-    mutationFn: async (payload: {
-      id: string;
-      data: CreateCompositeProductDto;
-    }) => {
-      return await updateCompositeProduct({ data: payload });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["products", productId] });
-      navigate({ to: `/dashboard/inventory/products/${productId}` });
-    },
-  });
+  const updateProductMutation = useUpdateProduct(productId);
 
   // Check if attribute already exists (case-insensitive)
   const attributeExists = (name: string) => {
@@ -353,7 +341,11 @@ function RouteComponent() {
       })),
     };
 
-    updateProductMutation.mutate({ id: productId, data: productData });
+    updateProductMutation.mutate({ id: productId, data: productData }, {
+      onSuccess: () => {
+        navigate({ to: `/dashboard/inventory/products/${productId}` });
+      },
+    });
   });
 
   // Loading state

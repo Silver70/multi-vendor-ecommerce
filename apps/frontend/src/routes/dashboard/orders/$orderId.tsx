@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getOrderQueryOptions } from "~/lib/ordersFn";
+import { orderQueries } from "~/lib/queries";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/dashboard/orders/$orderId")({
   component: RouteComponent,
   loader(ctx) {
     const { queryClient } = ctx.context;
-    queryClient.prefetchQuery(getOrderQueryOptions(ctx.params.orderId));
+    queryClient.prefetchQuery(orderQueries.getById(ctx.params.orderId));
   },
 });
 
@@ -45,7 +45,7 @@ function RouteComponent() {
     data: orderResponse,
     isLoading,
     error,
-  } = useQuery(getOrderQueryOptions(Route.useParams().orderId));
+  } = useQuery(orderQueries.getById(Route.useParams().orderId));
   console.log(orderResponse);
   if (isLoading) {
     return (

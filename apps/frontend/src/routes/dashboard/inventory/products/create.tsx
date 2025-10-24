@@ -24,23 +24,23 @@ import {
 } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 
-import { getCategoriesQueryOptions } from "~/lib/categoryFn";
-import { getVendorsQueryOptions } from "~/lib/vendorFn";
 import {
-  createCompositeProduct,
-  getGlobalAttributesQueryOptions,
+  categoryQueries,
+  vendorQueries,
+  attributeQueries,
+  useCreateProduct,
   type CreateCompositeProductDto,
   type VariantInput,
   type GlobalAttribute,
-} from "~/lib/productFn";
+} from "~/lib/queries";
 
 export const Route = createFileRoute("/dashboard/inventory/products/create")({
   component: RouteComponent,
   loader: ({ context }) => {
     const { queryClient } = context;
-    queryClient.prefetchQuery(getCategoriesQueryOptions);
-    queryClient.prefetchQuery(getVendorsQueryOptions);
-    queryClient.prefetchQuery(getGlobalAttributesQueryOptions);
+    queryClient.prefetchQuery(categoryQueries.getAll());
+    queryClient.prefetchQuery(vendorQueries.getAll());
+    queryClient.prefetchQuery(attributeQueries.getAll());
   },
 });
 
@@ -68,21 +68,16 @@ function RouteComponent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: categoriesResponse } = useQuery(getCategoriesQueryOptions);
-  const { data: vendorsResponse } = useQuery(getVendorsQueryOptions);
-  const { data: globalAttributes } = useQuery(getGlobalAttributesQueryOptions);
+  const { data: categoriesResponse } = useQuery(categoryQueries.getAll());
+  const { data: vendorsResponse } = useQuery(vendorQueries.getAll());
+  const { data: globalAttributes } = useQuery(attributeQueries.getAll());
 
   const categories = categoriesResponse?.items || [];
   const vendors = vendorsResponse?.items || [];
   const availableGlobalAttributes = globalAttributes || [];
 
   // React Hook Form - replaces 7 useState calls for product info
-  const {
-    register,
-    watch,
-    setValue,
-    handleSubmit,
-  } = useForm<ProductFormData>({
+  const { register, watch, setValue, handleSubmit } = useForm<ProductFormData>({
     defaultValues: {
       productName: "",
       description: "",
@@ -104,15 +99,7 @@ function RouteComponent() {
   const [variants, setVariants] = React.useState<VariantInput[]>([]);
 
   // Create Product Mutation
-  const createProductMutation = useMutation({
-    mutationFn: async (data: CreateCompositeProductDto) => {
-      return await createCompositeProduct({ data });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      navigate({ to: "/dashboard/inventory/products" });
-    },
-  });
+  const createProductMutation = useCreateProduct();
 
   // Check if attribute already exists (case-insensitive)
   const attributeExists = (name: string) => {
@@ -283,7 +270,11 @@ function RouteComponent() {
       })),
     };
 
-    createProductMutation.mutate(productData);
+    createProductMutation.mutate(productData, {
+      onSuccess: (createdProduct) => {
+        navigate({ to: "/dashboard/inventory/products" });
+      },
+    });
   });
 
   return (
@@ -444,7 +435,9 @@ function RouteComponent() {
 
             {/* Add Custom Attribute */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Create Custom Attribute</label>
+              <label className="text-sm font-medium">
+                Create Custom Attribute
+              </label>
               <div className="flex gap-2">
                 <Input
                   placeholder="Attribute name (e.g., Material, Brand)"
@@ -540,7 +533,9 @@ function RouteComponent() {
                                 ? newAttributeValue
                                 : ""
                             }
-                            onChange={(e) => setNewAttributeValue(e.target.value)}
+                            onChange={(e) =>
+                              setNewAttributeValue(e.target.value)
+                            }
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
                                 e.preventDefault();

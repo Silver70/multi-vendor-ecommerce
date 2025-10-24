@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getCustomersQueryOptions, CustomerDto } from "~/lib/customersFn";
+import { customerQueries, type CustomerDto } from "~/lib/queries";
 import { useIsMobile } from "~/hooks/use-mobile";
 import { Button } from "~/components/ui/button";
 import {
@@ -36,7 +36,7 @@ export function CustomerSearchSelect({
   const isMobile = useIsMobile();
   const isDesktop = !isMobile;
 
-  const { data: customersData, isLoading } = useQuery(getCustomersQueryOptions);
+  const { data: customersData, isLoading } = useQuery(customerQueries.getAll());
 
   const customers = customersData?.items || [];
 
