@@ -90,8 +90,8 @@ export function ProductVariantSearch({ onAddItem, currentOrderItems = [] }: Prod
     newRecentlyAdded.add(variant.id);
     setRecentlyAddedIds(newRecentlyAdded);
 
-    // Reset form
-    setSearchQuery("");
+    // Keep search query and dropdown open so user can select more variants
+    // Only reset quantity to 1 for next selection
     setQuantity(1);
   };
 
