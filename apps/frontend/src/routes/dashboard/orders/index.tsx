@@ -10,6 +10,7 @@ import {
   Plus,
   Search,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -22,9 +23,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { DataTable } from "~/components/data-table";
-import { Order, getOrdersQueryOptions } from "~/lib/ordersFn";
-import { useQuery } from "@tanstack/react-query";
+import { Order, getOrdersQueryOptions, updateOrder } from "~/lib/ordersFn";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/orders/")({
   component: RouteComponent,
@@ -71,19 +80,60 @@ const formatDate = (dateString: string) => {
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
   const {
     data: ordersResponse,
-    isLoading,
-    error,
+    isLoading: isQueryLoading,
+    error: queryError,
   } = useQuery(getOrdersQueryOptions);
 
   const orders = ordersResponse?.items || [];
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isQueryLoading) return <div>Loading...</div>;
 
-  if (error) return <div>Error: {error.message}</div>;
+  if (queryError) return <div>Error: {queryError.message}</div>;
+
+  const handleCancelOrderClick = (orderId: string) => {
+    setOrderToCancel(orderId);
+    setCancelDialogOpen(true);
+  };
+
+  const handleConfirmCancelOrder = async () => {
+    if (!orderToCancel) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await updateOrder({
+        data: {
+          id: orderToCancel,
+          order: { status: "cancelled" },
+        },
+      });
+
+      // Invalidate and refetch orders
+      await queryClient.invalidateQueries(getOrdersQueryOptions);
+
+      // Show success toast
+      toast.success("Order cancelled successfully");
+      setCancelDialogOpen(false);
+      setOrderToCancel(null);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to cancel order";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const columns: ColumnDef<Order>[] = [
     {
@@ -228,8 +278,16 @@ function RouteComponent() {
                 View details
               </DropdownMenuItem>
               <DropdownMenuItem>Update status</DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600">
-                Cancel order
+              <DropdownMenuItem
+                className={`text-red-600 ${
+                  order.status === "cancelled"
+                    ? "opacity-50 cursor-not-allowed pointer-events-none"
+                    : ""
+                }`}
+                onClick={() => handleCancelOrderClick(order.id)}
+                disabled={order.status === "cancelled"}
+              >
+                {order.status === "cancelled" ? "Already cancelled" : "Cancel order"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -326,6 +384,35 @@ function RouteComponent() {
 
       {/* Orders Table */}
       <DataTable columns={columns} data={filteredOrders} />
+
+      {/* Cancel Order Confirmation Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Order</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this order? This action will
+              restore the product stock and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCancelDialogOpen(false)}
+              disabled={isLoading}
+            >
+              Keep Order
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmCancelOrder}
+              disabled={isLoading}
+            >
+              {isLoading ? "Cancelling..." : "Cancel Order"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

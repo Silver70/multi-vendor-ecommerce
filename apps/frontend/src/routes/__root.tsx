@@ -17,6 +17,7 @@ import { seo } from "~/utils/seo";
 import { ClerkProvider } from "@clerk/tanstack-react-start";
 import { AuthProvider } from "~/context/AuthContext";
 import { ThemeProvider } from "~/components/theme-provider";
+import { Toaster } from "sonner";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -100,6 +101,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <ClerkProvider publishableKey={clerkPublishableKey}>
             <AuthProvider>
               {children}
+              <Toaster />
               <TanStackRouterDevtools position="bottom-right" />
               <ReactQueryDevtools buttonPosition="bottom-left" />
             </AuthProvider>
