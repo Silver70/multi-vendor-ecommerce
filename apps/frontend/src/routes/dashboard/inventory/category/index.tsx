@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { categoryQueries } from "~/lib/queries/categories";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
 } from "~/components/ui/dropdown-menu";
 
-export const Route = createFileRoute("/dashboard/inventory/category")({
+export const Route = createFileRoute("/dashboard/inventory/category/")({
   component: RouteComponent,
   loader: ({ context }) => {
     const { queryClient } = context;
@@ -26,6 +26,7 @@ export const Route = createFileRoute("/dashboard/inventory/category")({
 });
 
 function RouteComponent() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedParents, setSelectedParents] = useState<string[]>([]);
 
@@ -106,7 +107,12 @@ function RouteComponent() {
           </DropdownMenu>
 
           {/* Add New Category Button */}
-          <Button className="gap-2">
+          <Button
+            className="gap-2"
+            onClick={() =>
+              navigate({ to: "/dashboard/inventory/category/create" })
+            }
+          >
             <Plus className="h-4 w-4" />
             Add Category
           </Button>

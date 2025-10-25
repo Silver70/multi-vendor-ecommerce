@@ -33,6 +33,10 @@ import {
   type VariantInput,
   type GlobalAttribute,
 } from "~/lib/queries";
+import {
+  buildCategoryHierarchy,
+  flattenCategoryHierarchy,
+} from "~/lib/utils/category-hierarchy";
 
 export const Route = createFileRoute("/dashboard/inventory/products/create")({
   component: RouteComponent,
@@ -75,6 +79,13 @@ function RouteComponent() {
   const categories = categoriesResponse?.items || [];
   const vendors = vendorsResponse?.items || [];
   const availableGlobalAttributes = globalAttributes || [];
+
+  // Build hierarchical category structure
+  const categoryHierarchy = React.useMemo(() => {
+    if (categories.length === 0) return [];
+    const hierarchy = buildCategoryHierarchy(categories);
+    return flattenCategoryHierarchy(hierarchy);
+  }, [categories]);
 
   // React Hook Form - replaces 7 useState calls for product info
   const { register, watch, setValue, handleSubmit } = useForm<ProductFormData>({
@@ -346,11 +357,17 @@ function RouteComponent() {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
+                    {categoryHierarchy.length > 0 ? (
+                      categoryHierarchy.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          <span className="font-mono">{category.displayName}</span>
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>
+                        No categories available
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>

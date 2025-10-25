@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:5176";
@@ -27,6 +27,12 @@ export interface Category {
   productCount: number;
 }
 
+export interface CreateCategoryDto {
+  name: string;
+  slug: string;
+  parentId?: string;
+}
+
 // ============================================================================
 // Server Functions
 // ============================================================================
@@ -41,6 +47,17 @@ export const getCategories = createServerFn({ method: "GET" }).handler(
   }
 );
 
+// Create a new category
+export const createCategory = createServerFn({ method: "POST" })
+  .inputValidator((d: CreateCategoryDto) => d)
+  .handler(async ({ data }) => {
+    const response = await axios.post<Category>(
+      `${API_BASE_URL}/api/Categories`,
+      data
+    );
+    return response.data;
+  });
+
 // ============================================================================
 // Query Options (for use with useQuery)
 // ============================================================================
@@ -54,6 +71,23 @@ export const categoryQueries = {
       queryKey: categoryQueries.lists(),
       queryFn: () => getCategories(),
     }),
+};
+
+// ============================================================================
+// Mutation Hooks
+// ============================================================================
+
+export const useCreateCategory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateCategoryDto) => {
+      return await createCategory({ data });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoryQueries.lists() });
+    },
+  });
 };
 
 // ============================================================================

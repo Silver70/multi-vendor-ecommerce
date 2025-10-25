@@ -187,12 +187,16 @@ export {
 export {
   // Server Functions
   getCategories,
+  createCategory,
   // Query Builders
   categoryQueries,
+  // Mutations
+  useCreateCategory,
   // Legacy Exports
   getCategoriesQueryOptions,
   // Types
   type Category,
+  type CreateCategoryDto,
 } from "./categories";
 
 // ============================================================================
