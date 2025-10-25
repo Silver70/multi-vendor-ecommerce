@@ -41,7 +41,12 @@ export interface CreateCategoryDto {
 export const getCategories = createServerFn({ method: "GET" }).handler(
   async () => {
     const response = await axios.get<PagedResult<Category>>(
-      `${API_BASE_URL}/api/Categories`
+      `${API_BASE_URL}/api/Categories`,
+      {
+        params: {
+          pageSize: 100, // Request max page size to get all categories
+        },
+      }
     );
     return response.data;
   }
