@@ -34,6 +34,10 @@ import {
   type VariantInput,
   type GlobalAttribute,
 } from "~/lib/queries";
+import {
+  buildCategoryHierarchy,
+  flattenCategoryHierarchy,
+} from "~/lib/utils/category-hierarchy";
 
 export const Route = createFileRoute(
   "/dashboard/inventory/products/$productId/edit"
@@ -88,20 +92,28 @@ function RouteComponent() {
   const vendors = vendorsResponse?.items || [];
   const availableGlobalAttributes = globalAttributes || [];
 
+  // Build hierarchical category structure
+  const categoryHierarchy = React.useMemo(() => {
+    if (categories.length === 0) return [];
+    const hierarchy = buildCategoryHierarchy(categories);
+    return flattenCategoryHierarchy(hierarchy);
+  }, [categories]);
+
   // React Hook Form - replaces 6 useState calls
   const {
     register,
     watch,
     setValue,
     handleSubmit,
+    reset,
   } = useForm<ProductFormData>({
     defaultValues: {
-      productName: "",
-      description: "",
-      categoryId: "",
-      vendorId: "",
-      basePrice: "",
-      isActive: true,
+      productName: product?.name || "",
+      description: product?.description || "",
+      categoryId: product?.categoryId || "",
+      vendorId: product?.vendorId || "",
+      basePrice: (product?.variants?.[0]?.price || 0).toString(),
+      isActive: product?.isActive ?? true,
     },
   });
 
@@ -121,15 +133,16 @@ function RouteComponent() {
 
   // Initialize form with product data
   React.useEffect(() => {
-    if (product && categories.length > 0 && vendors.length > 0) {
-      setValue("productName", product.name);
-      setValue("description", product.description || "");
-      setValue("categoryId", product.categoryId);
-      setValue("vendorId", product.vendorId || "");
-      setValue("isActive", product.isActive);
-
-      const variantPrice = (product.variants?.[0]?.price || 0).toString();
-      setValue("basePrice", variantPrice);
+    if (product) {
+      // Reset form with product data
+      reset({
+        productName: product.name,
+        description: product.description || "",
+        categoryId: product.categoryId,
+        vendorId: product.vendorId || "",
+        isActive: product.isActive,
+        basePrice: (product.variants?.[0]?.price || 0).toString(),
+      });
 
       // Load attributes
       const loadedAttributes: Attribute[] = (product.attributes || []).map((attr) => ({
@@ -151,7 +164,21 @@ function RouteComponent() {
       }));
       setVariants(loadedVariants);
     }
-  }, [product, categories, vendors, setValue]);
+  }, [product, reset]);
+
+  // Re-sync form values after categories/vendors load to ensure Select components show selected values
+  React.useEffect(() => {
+    if (product && categoryHierarchy.length > 0 && vendors.length > 0) {
+      reset({
+        productName: product.name,
+        description: product.description || "",
+        categoryId: product.categoryId,
+        vendorId: product.vendorId || "",
+        isActive: product.isActive,
+        basePrice: (product.variants?.[0]?.price || 0).toString(),
+      });
+    }
+  }, [product, categoryHierarchy, vendors, reset]);
 
   // Update Product Mutation
   const updateProductMutation = useUpdateProduct(productId);
@@ -444,17 +471,18 @@ function RouteComponent() {
                   Category <span className="text-red-500">*</span>
                 </Label>
                 <Select
-                  value={categoryId}
+                  value={categoryId || ""}
                   onValueChange={(value) => setValue("categoryId", value)}
                   required
+                  disabled={categoryHierarchy.length === 0}
                 >
                   <SelectTrigger id="category">
-                    <SelectValue placeholder="Select a category" />
+                    <SelectValue placeholder={categoryHierarchy.length === 0 ? "Loading categories..." : "Select a category"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((category) => (
+                    {categoryHierarchy.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
-                        {category.name}
+                        <span className="font-mono">{category.displayName}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -468,9 +496,10 @@ function RouteComponent() {
                   onValueChange={(val) =>
                     setValue("vendorId", val === "none" ? "" : val)
                   }
+                  disabled={vendors.length === 0}
                 >
                   <SelectTrigger id="vendor">
-                    <SelectValue placeholder="Select a vendor (optional)" />
+                    <SelectValue placeholder={vendors.length === 0 ? "Loading vendors..." : "Select a vendor (optional)"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No vendor</SelectItem>

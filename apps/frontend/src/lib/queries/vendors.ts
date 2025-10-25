@@ -33,7 +33,12 @@ export interface Vendor {
 export const getVendors = createServerFn({ method: "GET" }).handler(
   async () => {
     const response = await axios.get<PagedResult<Vendor>>(
-      `${API_BASE_URL}/api/Vendors`
+      `${API_BASE_URL}/api/Vendors`,
+      {
+        params: {
+          pageSize: 100, // Request max page size to get all vendors
+        },
+      }
     );
     return response.data;
   }

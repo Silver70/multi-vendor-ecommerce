@@ -109,7 +109,12 @@ export interface GlobalAttribute {
 export const getProducts = createServerFn({ method: "GET" }).handler(
   async () => {
     const response = await axios.get<PagedResult<Product>>(
-      `${API_BASE_URL}/api/Products`
+      `${API_BASE_URL}/api/Products`,
+      {
+        params: {
+          pageSize: 100, // Request max page size to get all products
+        },
+      }
     );
     return response.data;
   }
@@ -220,6 +225,7 @@ export const productQueries = {
       queryKey: productQueries.detail(id),
       queryFn: () => getProduct({ data: id }),
       enabled: !!id,
+      staleTime: 0, // Always refetch when changing product ID
     }),
 
   getBySlug: (slug: string) =>

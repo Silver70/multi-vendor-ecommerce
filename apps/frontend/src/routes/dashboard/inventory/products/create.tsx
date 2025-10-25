@@ -357,17 +357,11 @@ function RouteComponent() {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categoryHierarchy.length > 0 ? (
-                      categoryHierarchy.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          <span className="font-mono">{category.displayName}</span>
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="" disabled>
-                        No categories available
+                    {categoryHierarchy.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        <span className="font-mono">{category.displayName}</span>
                       </SelectItem>
-                    )}
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
