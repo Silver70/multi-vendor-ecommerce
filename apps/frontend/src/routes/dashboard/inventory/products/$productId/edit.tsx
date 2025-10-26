@@ -8,13 +8,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
+import { CustomSelect } from "~/components/ui/custom-select";
 import {
   Card,
   CardContent,
@@ -100,20 +94,14 @@ function RouteComponent() {
   }, [categories]);
 
   // React Hook Form - replaces 6 useState calls
-  const {
-    register,
-    watch,
-    setValue,
-    handleSubmit,
-    reset,
-  } = useForm<ProductFormData>({
+  const { register, watch, setValue, handleSubmit } = useForm<ProductFormData>({
     defaultValues: {
-      productName: product?.name || "",
-      description: product?.description || "",
-      categoryId: product?.categoryId || "",
-      vendorId: product?.vendorId || "",
-      basePrice: (product?.variants?.[0]?.price || 0).toString(),
-      isActive: product?.isActive ?? true,
+      productName: "",
+      description: "",
+      categoryId: "",
+      vendorId: "",
+      basePrice: "",
+      isActive: true,
     },
   });
 
@@ -131,54 +119,62 @@ function RouteComponent() {
   const [newAttributeValue, setNewAttributeValue] = React.useState("");
   const [variants, setVariants] = React.useState<VariantInput[]>([]);
 
-  // Initialize form with product data
+  // Initialize form with product data - load immediately when product arrives
   React.useEffect(() => {
     if (product) {
-      // Reset form with product data
-      reset({
-        productName: product.name,
-        description: product.description || "",
-        categoryId: product.categoryId,
-        vendorId: product.vendorId || "",
-        isActive: product.isActive,
-        basePrice: (product.variants?.[0]?.price || 0).toString(),
-      });
+      setValue("productName", product.name);
+      setValue("description", product.description || "");
+      setValue("isActive", product.isActive);
+      const variantPrice = (product.variants?.[0]?.price || 0).toString();
+      setValue("basePrice", variantPrice);
 
       // Load attributes
-      const loadedAttributes: Attribute[] = (product.attributes || []).map((attr) => ({
-        id: Math.random().toString(36).substring(2, 11),
-        name: attr.name,
-        values: attr.values.map((v) => ({
+      const loadedAttributes: Attribute[] = (product.attributes || []).map(
+        (attr) => ({
           id: Math.random().toString(36).substring(2, 11),
-          value: v,
-        })),
-      }));
+          name: attr.name,
+          values: attr.values.map((v) => ({
+            id: Math.random().toString(36).substring(2, 11),
+            value: v,
+          })),
+        })
+      );
       setAttributes(loadedAttributes);
 
       // Load variants
-      const loadedVariants: VariantInput[] = (product.variants || []).map((v) => ({
-        sku: v.sku,
-        price: v.price,
-        stock: v.stock,
-        attributes: v.attributes || {},
-      }));
+      const loadedVariants: VariantInput[] = (product.variants || []).map(
+        (v) => ({
+          sku: v.sku,
+          price: v.price,
+          stock: v.stock,
+          attributes: v.attributes || {},
+        })
+      );
       setVariants(loadedVariants);
     }
-  }, [product, reset]);
+  }, [product, setValue]);
 
-  // Re-sync form values after categories/vendors load to ensure Select components show selected values
+  // Set category and vendor AFTER the dropdowns have loaded with data
   React.useEffect(() => {
     if (product && categoryHierarchy.length > 0 && vendors.length > 0) {
-      reset({
-        productName: product.name,
-        description: product.description || "",
+      console.log("Setting form values:", {
         categoryId: product.categoryId,
-        vendorId: product.vendorId || "",
-        isActive: product.isActive,
-        basePrice: (product.variants?.[0]?.price || 0).toString(),
+        vendorId: product.vendorId,
+        productName: product.name,
       });
+      console.log(
+        "Available categories:",
+        categoryHierarchy.map((c) => ({ id: c.id, name: c.name }))
+      );
+      console.log(
+        "Available vendors:",
+        vendors.map((v) => ({ id: v.id, name: v.name }))
+      );
+
+      setValue("categoryId", product.categoryId);
+      setValue("vendorId", product.vendorId || "");
     }
-  }, [product, categoryHierarchy, vendors, reset]);
+  }, [product, categoryHierarchy, vendors, setValue]);
 
   // Update Product Mutation
   const updateProductMutation = useUpdateProduct(productId);
@@ -368,19 +364,32 @@ function RouteComponent() {
       })),
     };
 
-    updateProductMutation.mutate({ id: productId, data: productData }, {
-      onSuccess: () => {
-        navigate({ to: `/dashboard/inventory/products/${productId}` });
-      },
-    });
+    updateProductMutation.mutate(
+      { id: productId, data: productData },
+      {
+        onSuccess: () => {
+          navigate({ to: `/dashboard/inventory/products/${productId}` });
+        },
+      }
+    );
   });
 
-  // Loading state
-  if (isLoading) {
+  // Loading state - wait for product, categories, and vendors to all load
+  const isAllDataLoaded =
+    product && categoryHierarchy.length > 0 && vendors.length > 0;
+
+  if (isLoading || !isAllDataLoaded) {
     return (
       <div className="container mx-auto py-6 max-w-5xl">
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-muted-foreground text-sm">
+              {isLoading
+                ? "Loading product..."
+                : "Loading categories and vendors..."}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -470,46 +479,35 @@ function RouteComponent() {
                 <Label htmlFor="category">
                   Category <span className="text-red-500">*</span>
                 </Label>
-                <Select
-                  value={categoryId || ""}
-                  onValueChange={(value) => setValue("categoryId", value)}
-                  required
-                  disabled={categoryHierarchy.length === 0}
-                >
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder={categoryHierarchy.length === 0 ? "Loading categories..." : "Select a category"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categoryHierarchy.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        <span className="font-mono">{category.displayName}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CustomSelect
+                  id="category"
+                  value={categoryId}
+                  onChange={(value) => setValue("categoryId", value)}
+                  placeholder="Select a category"
+                  options={categoryHierarchy.map((category) => ({
+                    value: category.id,
+                    label: category.displayName,
+                  }))}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="vendor">Vendor</Label>
-                <Select
+                <CustomSelect
+                  id="vendor"
                   value={vendorId || "none"}
-                  onValueChange={(val) =>
+                  onChange={(val) =>
                     setValue("vendorId", val === "none" ? "" : val)
                   }
-                  disabled={vendors.length === 0}
-                >
-                  <SelectTrigger id="vendor">
-                    <SelectValue placeholder={vendors.length === 0 ? "Loading vendors..." : "Select a vendor (optional)"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No vendor</SelectItem>
-                    {vendors.map((vendor) => (
-                      <SelectItem key={vendor.id} value={vendor.id}>
-                        {vendor.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Select a vendor (optional)"
+                  options={[
+                    { value: "none", label: "No vendor" },
+                    ...vendors.map((vendor) => ({
+                      value: vendor.id,
+                      label: vendor.name,
+                    })),
+                  ]}
+                />
               </div>
             </div>
 
