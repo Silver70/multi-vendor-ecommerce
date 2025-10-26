@@ -7,13 +7,7 @@ import { Plus, X, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
+import { CustomSelect } from "~/components/ui/custom-select";
 import {
   Card,
   CardContent,
@@ -89,6 +83,7 @@ function RouteComponent() {
   // Auto-generate slug from name
   const nameValue = watch("name");
   const slugValue = watch("slug");
+  const parentId = watch("parentId");
 
   const generateSlug = (text: string): string => {
     if (!text || text.trim().length === 0) return "";
@@ -224,30 +219,21 @@ function RouteComponent() {
                 {/* Parent Category */}
                 <div className="space-y-2">
                   <Label htmlFor="parentId">Parent Category (Optional)</Label>
-                  <Select
-                    onValueChange={(value) =>
-                      setValue("parentId", value || "")
+                  <CustomSelect
+                    id="parentId"
+                    value={parentId}
+                    onChange={(value) => setValue("parentId", value || "")}
+                    placeholder="No parent (top-level category)"
+                    options={
+                      parentCategoryOptions.length > 0
+                        ? parentCategoryOptions.map((category) => ({
+                            value: category.id,
+                            label: category.displayName,
+                          }))
+                        : []
                     }
-                  >
-                    <SelectTrigger id="parentId">
-                      <SelectValue placeholder="No parent (top-level category)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {parentCategoryOptions.length > 0 ? (
-                        parentCategoryOptions.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            <span className="font-mono">
-                              {category.displayName}
-                            </span>
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled>
-                          No parent categories available
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                    disabled={parentCategoryOptions.length === 0}
+                  />
                   <p className="text-xs text-muted-foreground">
                     Select a parent to create a subcategory. Leave empty for a
                     top-level category.

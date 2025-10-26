@@ -19,13 +19,7 @@ import {
 } from "~/components/ui/dialog";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
+import { CustomSelect } from "~/components/ui/custom-select";
 import { AlertCircle, Plus } from "lucide-react";
 
 interface AddressSelectProps {
@@ -277,35 +271,23 @@ export function AddressSelect({
         </div>
       ) : (
         <div className="flex gap-2">
-          <Select
+          <CustomSelect
             value={value?.id || ""}
-            onValueChange={(selectedId) => {
+            onChange={(selectedId) => {
               const selected = addresses.find((a) => a.id === selectedId);
               onValueChange(selected || null);
             }}
-          >
-            <SelectTrigger className="flex-1">
-              <SelectValue
-                placeholder={
-                  value
-                    ? `${value.fullName}, ${value.city}, ${value.country}`
-                    : "Select an address..."
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {addresses.map((address) => (
-                <SelectItem key={address.id} value={address.id}>
-                  <div className="flex flex-col">
-                    <span>{address.fullName}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {address.line1}, {address.city}, {address.country}
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder={
+              value
+                ? `${value.fullName}, ${value.city}, ${value.country}`
+                : "Select an address..."
+            }
+            options={addresses.map((address) => ({
+              value: address.id,
+              label: `${address.fullName} - ${address.line1}, ${address.city}, ${address.country}`,
+            }))}
+            className="flex-1"
+          />
 
           <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
             <DialogTrigger asChild>

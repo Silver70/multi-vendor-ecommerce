@@ -31,13 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
+import { CustomSelect } from "~/components/ui/custom-select";
 import { DataTable } from "~/components/data-table";
 import { orderQueries, useUpdateOrder, type Order } from "~/lib/queries";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -495,18 +489,19 @@ function RouteComponent() {
               <label htmlFor="status" className="text-sm font-medium">
                 Status
               </label>
-              <Select value={newStatus} onValueChange={setNewStatus}>
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select a status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
+              <CustomSelect
+                id="status"
+                value={newStatus}
+                onChange={setNewStatus}
+                placeholder="Select a status"
+                options={[
+                  { value: "pending", label: "Pending" },
+                  { value: "paid", label: "Paid" },
+                  { value: "shipped", label: "Shipped" },
+                  { value: "delivered", label: "Delivered" },
+                  { value: "cancelled", label: "Cancelled" },
+                ]}
+              />
             </div>
           </div>
           <DialogFooter>

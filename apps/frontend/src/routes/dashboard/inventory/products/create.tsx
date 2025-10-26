@@ -8,13 +8,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
+import { CustomSelect } from "~/components/ui/custom-select";
 import {
   Card,
   CardContent,
@@ -102,6 +96,8 @@ function RouteComponent() {
   // Watch all form fields
   const productName = watch("productName");
   const basePrice = watch("basePrice");
+  const categoryId = watch("categoryId");
+  const vendorId = watch("vendorId");
 
   // Attributes and Variants State (complex nested state, kept in React.useState)
   const [attributes, setAttributes] = React.useState<Attribute[]>([]);
@@ -349,42 +345,32 @@ function RouteComponent() {
                 <Label htmlFor="category">
                   Category <span className="text-red-500">*</span>
                 </Label>
-                <Select
-                  onValueChange={(value) => setValue("categoryId", value)}
-                  required
-                >
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categoryHierarchy.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        <span className="font-mono">{category.displayName}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CustomSelect
+                  id="category"
+                  value={categoryId}
+                  onChange={(value) => setValue("categoryId", value)}
+                  placeholder="Select a category"
+                  options={categoryHierarchy.map((category) => ({
+                    value: category.id,
+                    label: category.displayName,
+                  }))}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="vendor">
                   Vendor <span className="text-red-500">*</span>
                 </Label>
-                <Select
-                  onValueChange={(value) => setValue("vendorId", value)}
-                  required
-                >
-                  <SelectTrigger id="vendor">
-                    <SelectValue placeholder="Select a vendor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vendors.map((vendor) => (
-                      <SelectItem key={vendor.id} value={vendor.id}>
-                        {vendor.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CustomSelect
+                  id="vendor"
+                  value={vendorId}
+                  onChange={(value) => setValue("vendorId", value)}
+                  placeholder="Select a vendor"
+                  options={vendors.map((vendor) => ({
+                    value: vendor.id,
+                    label: vendor.name,
+                  }))}
+                />
               </div>
             </div>
 
