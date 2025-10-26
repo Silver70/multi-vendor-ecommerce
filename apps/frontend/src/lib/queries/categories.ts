@@ -29,7 +29,7 @@ export interface Category {
 
 export interface CreateCategoryDto {
   name: string;
-  slug: string;
+  slug?: string;
   parentId?: string;
 }
 

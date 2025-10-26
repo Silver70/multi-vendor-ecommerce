@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { categoryQueries } from "~/lib/queries/categories";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuItem,
 } from "~/components/ui/dropdown-menu";
+import { CreateCategoryModal } from "~/components/CreateCategoryModal";
 
 export const Route = createFileRoute("/dashboard/inventory/category/")({
   component: RouteComponent,
@@ -26,9 +27,9 @@ export const Route = createFileRoute("/dashboard/inventory/category/")({
 });
 
 function RouteComponent() {
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedParents, setSelectedParents] = useState<string[]>([]);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const { data: categoriesResponse } = useQuery(categoryQueries.getAll());
   const categories = categoriesResponse?.items || [];
@@ -109,9 +110,7 @@ function RouteComponent() {
           {/* Add New Category Button */}
           <Button
             className="gap-2"
-            onClick={() =>
-              navigate({ to: "/dashboard/inventory/category/create" })
-            }
+            onClick={() => setCreateModalOpen(true)}
           >
             <Plus className="h-4 w-4" />
             Add Category
@@ -233,6 +232,12 @@ function RouteComponent() {
           {categories.reduce((sum, c) => sum + c.productCount, 0)}
         </div>
       )}
+
+      {/* Create Category Modal */}
+      <CreateCategoryModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+      />
     </div>
   );
 }

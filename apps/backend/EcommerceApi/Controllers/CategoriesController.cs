@@ -146,8 +146,13 @@ namespace EcommerceApi.Controllers
                     }
                 }
 
+                // Auto-generate slug from name if not provided
+                string slug = string.IsNullOrWhiteSpace(createDto.Slug)
+                    ? GenerateSlug(createDto.Name)
+                    : createDto.Slug;
+
                 // Check if slug already exists
-                var slugExists = await _context.Categories.AnyAsync(c => c.Slug == createDto.Slug);
+                var slugExists = await _context.Categories.AnyAsync(c => c.Slug == slug);
                 if (slugExists)
                 {
                     return BadRequest(new { message = "A category with this slug already exists" });
@@ -158,7 +163,7 @@ namespace EcommerceApi.Controllers
                     Id = Guid.NewGuid(),
                     ParentId = createDto.ParentId,
                     Name = createDto.Name,
-                    Slug = createDto.Slug
+                    Slug = slug
                 };
 
                 _context.Categories.Add(category);
@@ -310,6 +315,23 @@ namespace EcommerceApi.Controllers
             };
 
             return query;
+        }
+
+        private string GenerateSlug(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return string.Empty;
+
+            return text
+                .ToLower()
+                .Trim()
+                .Replace(" ", "-")
+                .Replace("--", "-")
+                // Remove non-alphanumeric characters except hyphens
+                .Where(c => char.IsLetterOrDigit(c) || c == '-')
+                .Aggregate(new System.Text.StringBuilder(), (sb, c) => sb.Append(c))
+                .ToString()
+                .TrimEnd('-');
         }
     }
 }
