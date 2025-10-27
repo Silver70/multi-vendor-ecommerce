@@ -6,11 +6,16 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CustomerSearchSelect } from "~/components/CustomerSearchSelect";
 import { AddressSelect } from "~/components/AddressSelect";
 import {
-  ProductVariantSearch,
-  OrderItemInput,
-} from "~/components/ProductVariantSearch";
+  ProductVariantSidebar,
+  type OrderItemInput,
+} from "~/components/ProductVariantSidebar";
 import { OrderItemsSummary } from "~/components/OrderItemsSummary";
-import { useCreateOrder, type CreateOrderDto, type CustomerDto, type AddressDto } from "~/lib/queries";
+import {
+  useCreateOrder,
+  type CreateOrderDto,
+  type CustomerDto,
+  type AddressDto,
+} from "~/lib/queries";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { AlertCircle, CheckCircle } from "lucide-react";
@@ -95,18 +100,11 @@ function RouteComponent() {
         <div className="grid gap-6 md:grid-cols-3">
           {/* Main Content - Order Items */}
           <div className="md:col-span-2 space-y-4">
-            {/* Add Items Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Order Items</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ProductVariantSearch
-                  onAddItem={handleAddItem}
-                  currentOrderItems={orderItems}
-                />
-              </CardContent>
-            </Card>
+            {/* Add Items Button */}
+            <ProductVariantSidebar
+              onAddItem={handleAddItem}
+              currentOrderItems={orderItems}
+            />
 
             {/* Items Summary Card */}
             <OrderItemsSummary
