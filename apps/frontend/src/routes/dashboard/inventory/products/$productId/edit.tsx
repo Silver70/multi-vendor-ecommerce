@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Plus, X, Trash2, Loader2 } from "lucide-react";
+import { Plus, X, Trash2, Loader2, ChevronDown } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -32,6 +32,10 @@ import {
   buildCategoryHierarchy,
   flattenCategoryHierarchy,
 } from "~/lib/utils/category-hierarchy";
+import {
+  groupEditPageVariants,
+  hasMultipleAttributes,
+} from "~/lib/utils/variant-grouping";
 
 export const Route = createFileRoute(
   "/dashboard/inventory/products/$productId/edit"
@@ -119,6 +123,21 @@ function RouteComponent() {
   const [editingAttributeId, setEditingAttributeId] = React.useState<string | null>(null);
   const [editingAttributeValue, setEditingAttributeValue] = React.useState("");
   const [variants, setVariants] = React.useState<VariantInput[]>([]);
+
+  // State to track which variant groups are expanded on the edit page
+  const [expandedVariantGroups, setExpandedVariantGroups] = React.useState<Set<string>>(
+    new Set()
+  );
+
+  const toggleVariantGroupExpansion = (groupValue: string) => {
+    const newExpanded = new Set(expandedVariantGroups);
+    if (newExpanded.has(groupValue)) {
+      newExpanded.delete(groupValue);
+    } else {
+      newExpanded.add(groupValue);
+    }
+    setExpandedVariantGroups(newExpanded);
+  };
 
   // Initialize form with product data - load immediately when product arrives
   React.useEffect(() => {
@@ -729,119 +748,298 @@ function RouteComponent() {
         </Card>
 
         {/* Product Variants */}
-        {variants.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Product Variants</CardTitle>
-              <CardDescription>
-                Set pricing and stock for each variant combination. Variant
-                attributes are read-only.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {variants.map((variant, index) => (
-                <Card key={index} className="border">
-                  <CardContent className="pt-4">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-1 space-y-3">
-                        {/* Variant Attributes Display (Read-only) */}
-                        <div>
-                          <p className="text-xs font-semibold text-muted-foreground mb-2">
-                            Variant Attributes
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {Object.entries(variant.attributes).map(
-                              ([key, value]) => (
-                                <Badge key={key} variant="outline">
-                                  {key}: {value}
-                                </Badge>
+        {variants.length > 0 && (() => {
+          // Check if we should show grouped variants
+          const shouldGroupVariants =
+            variants.length > 0 && hasMultipleAttributes(variants as any);
+          const groupedData = shouldGroupVariants
+            ? groupEditPageVariants(variants)
+            : null;
+
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Product Variants</CardTitle>
+                <CardDescription>
+                  Set pricing and stock for each variant combination. Variant
+                  attributes are read-only.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {groupedData ? (
+                  // Grouped variants display
+                  <div className="space-y-2">
+                    {groupedData.groups.map((group) => (
+                      <div key={group.groupValue} className="border rounded-lg">
+                        {/* Group header */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            toggleVariantGroupExpansion(group.groupValue)
+                          }
+                          className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <ChevronDown
+                              className={`h-5 w-5 transition-transform ${
+                                expandedVariantGroups.has(group.groupValue)
+                                  ? "transform rotate-0"
+                                  : "transform -rotate-90"
+                              }`}
+                            />
+                            <div className="text-left">
+                              <div className="font-semibold">
+                                {group.groupAttribute}: {group.groupValue}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {group.variantsWithIndices.length} variant
+                                {group.variantsWithIndices.length !== 1
+                                  ? "s"
+                                  : ""}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+
+                        {/* Group content - variants */}
+                        {expandedVariantGroups.has(group.groupValue) && (
+                          <div className="border-t bg-muted/20 p-3 space-y-3">
+                            {group.variantsWithIndices.map(
+                              ({ index, variant }) => (
+                                <Card key={index} className="border">
+                                  <CardContent className="pt-4">
+                                    <div className="flex items-start gap-4">
+                                      <div className="flex-1 space-y-3">
+                                        {/* Variant Attributes Display (Read-only) */}
+                                        <div>
+                                          <p className="text-xs font-semibold text-muted-foreground mb-2">
+                                            Variant Attributes
+                                          </p>
+                                          <div className="flex flex-wrap gap-2">
+                                            {Object.entries(
+                                              variant.attributes
+                                            ).map(([key, value]) => (
+                                              <Badge
+                                                key={key}
+                                                variant="outline"
+                                              >
+                                                {key}: {String(value)}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </div>
+
+                                        {/* Variant Fields */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                          <div className="space-y-1">
+                                            <Label
+                                              htmlFor={`sku-${index}`}
+                                              className="text-sm"
+                                            >
+                                              SKU (Optional)
+                                            </Label>
+                                            <Input
+                                              id={`sku-${index}`}
+                                              placeholder="SKU-001"
+                                              value={variant.sku || ""}
+                                              onChange={(e) =>
+                                                updateVariant(
+                                                  index,
+                                                  "sku",
+                                                  e.target.value
+                                                )
+                                              }
+                                            />
+                                          </div>
+
+                                          <div className="space-y-1">
+                                            <Label
+                                              htmlFor={`price-${index}`}
+                                              className="text-sm"
+                                            >
+                                              Price{" "}
+                                              <span className="text-red-500">
+                                                *
+                                              </span>
+                                            </Label>
+                                            <Input
+                                              id={`price-${index}`}
+                                              type="number"
+                                              step="0.01"
+                                              min="0.01"
+                                              placeholder="0.00"
+                                              value={variant.price}
+                                              onChange={(e) =>
+                                                updateVariant(
+                                                  index,
+                                                  "price",
+                                                  parseFloat(e.target.value) ||
+                                                    0
+                                                )
+                                              }
+                                              required
+                                            />
+                                          </div>
+
+                                          <div className="space-y-1">
+                                            <Label
+                                              htmlFor={`stock-${index}`}
+                                              className="text-sm"
+                                            >
+                                              Stock{" "}
+                                              <span className="text-red-500">
+                                                *
+                                              </span>
+                                            </Label>
+                                            <Input
+                                              id={`stock-${index}`}
+                                              type="number"
+                                              min="0"
+                                              placeholder="0"
+                                              value={variant.stock}
+                                              onChange={(e) =>
+                                                updateVariant(
+                                                  index,
+                                                  "stock",
+                                                  parseInt(e.target.value) || 0
+                                                )
+                                              }
+                                              required
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => removeVariant(index)}
+                                      >
+                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                      </Button>
+                                    </div>
+                                  </CardContent>
+                                </Card>
                               )
                             )}
                           </div>
-                        </div>
-
-                        {/* Variant Fields */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <div className="space-y-1">
-                            <Label htmlFor={`sku-${index}`} className="text-sm">
-                              SKU (Optional)
-                            </Label>
-                            <Input
-                              id={`sku-${index}`}
-                              placeholder="SKU-001"
-                              value={variant.sku || ""}
-                              onChange={(e) =>
-                                updateVariant(index, "sku", e.target.value)
-                              }
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <Label
-                              htmlFor={`price-${index}`}
-                              className="text-sm"
-                            >
-                              Price <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id={`price-${index}`}
-                              type="number"
-                              step="0.01"
-                              min="0.01"
-                              placeholder="0.00"
-                              value={variant.price}
-                              onChange={(e) =>
-                                updateVariant(
-                                  index,
-                                  "price",
-                                  parseFloat(e.target.value) || 0
-                                )
-                              }
-                              required
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <Label
-                              htmlFor={`stock-${index}`}
-                              className="text-sm"
-                            >
-                              Stock <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id={`stock-${index}`}
-                              type="number"
-                              min="0"
-                              placeholder="0"
-                              value={variant.stock}
-                              onChange={(e) =>
-                                updateVariant(
-                                  index,
-                                  "stock",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
-                              required
-                            />
-                          </div>
-                        </div>
+                        )}
                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  // Flat variants display (no grouping)
+                  variants.map((variant, index) => (
+                    <Card key={index} className="border">
+                      <CardContent className="pt-4">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-1 space-y-3">
+                            {/* Variant Attributes Display (Read-only) */}
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground mb-2">
+                                Variant Attributes
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {Object.entries(variant.attributes).map(
+                                  ([key, value]) => (
+                                    <Badge key={key} variant="outline">
+                                      {key}: {value}
+                                    </Badge>
+                                  )
+                                )}
+                              </div>
+                            </div>
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeVariant(index)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+                            {/* Variant Fields */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <Label
+                                  htmlFor={`sku-${index}`}
+                                  className="text-sm"
+                                >
+                                  SKU (Optional)
+                                </Label>
+                                <Input
+                                  id={`sku-${index}`}
+                                  placeholder="SKU-001"
+                                  value={variant.sku || ""}
+                                  onChange={(e) =>
+                                    updateVariant(index, "sku", e.target.value)
+                                  }
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label
+                                  htmlFor={`price-${index}`}
+                                  className="text-sm"
+                                >
+                                  Price{" "}
+                                  <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id={`price-${index}`}
+                                  type="number"
+                                  step="0.01"
+                                  min="0.01"
+                                  placeholder="0.00"
+                                  value={variant.price}
+                                  onChange={(e) =>
+                                    updateVariant(
+                                      index,
+                                      "price",
+                                      parseFloat(e.target.value) || 0
+                                    )
+                                  }
+                                  required
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label
+                                  htmlFor={`stock-${index}`}
+                                  className="text-sm"
+                                >
+                                  Stock{" "}
+                                  <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id={`stock-${index}`}
+                                  type="number"
+                                  min="0"
+                                  placeholder="0"
+                                  value={variant.stock}
+                                  onChange={(e) =>
+                                    updateVariant(
+                                      index,
+                                      "stock",
+                                      parseInt(e.target.value) || 0
+                                    )
+                                  }
+                                  required
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeVariant(index)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Form Actions */}
         <div className="flex items-center justify-end gap-4">

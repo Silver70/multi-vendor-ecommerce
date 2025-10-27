@@ -11,6 +11,23 @@ export interface GroupedVariants {
   groups: VariantGroup[];
 }
 
+// For edit page variant inputs
+export interface VariantInputWithIndex {
+  index: number;
+  variant: any; // VariantInput type
+}
+
+export interface EditPageVariantGroup {
+  groupValue: string;
+  groupAttribute: string;
+  variantsWithIndices: VariantInputWithIndex[];
+}
+
+export interface EditPageGroupedVariants {
+  groupAttribute: string;
+  groups: EditPageVariantGroup[];
+}
+
 /**
  * Groups variants by their primary attribute (first attribute in the attributes object)
  * For example, if variants have attributes {Color: "Red", Size: "M"},
@@ -88,4 +105,70 @@ export function hasMultipleAttributes(variants: ProductVariant[]): boolean {
 
   const attributeNames = getAttributeNames(variants);
   return attributeNames.length > 1;
+}
+
+/**
+ * Groups variant inputs for the edit page while preserving array indices
+ * This is critical because the edit page uses indices for update/delete operations
+ *
+ * Returns grouped variants with their original indices so:
+ * - updateVariant(index, ...) still works
+ * - removeVariant(index) removes the correct variant
+ * - Form submission processes correct variants
+ *
+ * Example:
+ * Input: [
+ *   {index: 0, variant: {sku: "X-RED-S", attributes: {Color: "Red", Size: "S"}}},
+ *   {index: 1, variant: {sku: "X-RED-M", attributes: {Color: "Red", Size: "M"}}},
+ *   {index: 2, variant: {sku: "X-BLUE-S", attributes: {Color: "Blue", Size: "S"}}}
+ * ]
+ *
+ * Output: Grouped by Color with original indices preserved
+ */
+export function groupEditPageVariants(
+  variants: any[] // VariantInput[]
+): EditPageGroupedVariants | null {
+  if (!variants || variants.length === 0) {
+    return null;
+  }
+
+  // Get the first attribute name from the first variant
+  const firstVariant = variants[0];
+  const attributeNames = Object.keys(firstVariant.attributes || {});
+
+  if (attributeNames.length === 0) {
+    return null;
+  }
+
+  const groupAttribute = attributeNames[0];
+
+  // Group variants by the first attribute value, preserving indices
+  const groupMap = new Map<string, VariantInputWithIndex[]>();
+
+  variants.forEach((variant, index) => {
+    const groupValue =
+      variant.attributes?.[groupAttribute] || "Unknown";
+
+    if (!groupMap.has(groupValue)) {
+      groupMap.set(groupValue, []);
+    }
+    groupMap.get(groupValue)!.push({
+      index,
+      variant,
+    });
+  });
+
+  // Convert map to array of groups, maintaining insertion order
+  const groups: EditPageVariantGroup[] = Array.from(groupMap.entries()).map(
+    ([groupValue, variantsWithIndices]) => ({
+      groupValue,
+      groupAttribute,
+      variantsWithIndices,
+    })
+  );
+
+  return {
+    groupAttribute,
+    groups,
+  };
 }
