@@ -116,7 +116,8 @@ function RouteComponent() {
   // Attributes and Variants State (complex nested state, kept in React.useState)
   const [attributes, setAttributes] = React.useState<Attribute[]>([]);
   const [newAttributeName, setNewAttributeName] = React.useState("");
-  const [newAttributeValue, setNewAttributeValue] = React.useState("");
+  const [editingAttributeId, setEditingAttributeId] = React.useState<string | null>(null);
+  const [editingAttributeValue, setEditingAttributeValue] = React.useState("");
   const [variants, setVariants] = React.useState<VariantInput[]>([]);
 
   // Initialize form with product data - load immediately when product arrives
@@ -663,18 +664,20 @@ function RouteComponent() {
                           <Input
                             placeholder={`Add ${attr.name.toLowerCase()} value`}
                             value={
-                              attr.id === attributes[attributes.length - 1]?.id
-                                ? newAttributeValue
+                              editingAttributeId === attr.id
+                                ? editingAttributeValue
                                 : ""
                             }
-                            onChange={(e) =>
-                              setNewAttributeValue(e.target.value)
-                            }
+                            onChange={(e) => {
+                              setEditingAttributeId(attr.id);
+                              setEditingAttributeValue(e.target.value);
+                            }}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
                                 e.preventDefault();
-                                addValueToAttribute(attr.id, newAttributeValue);
-                                setNewAttributeValue("");
+                                addValueToAttribute(attr.id, editingAttributeValue);
+                                setEditingAttributeId(null);
+                                setEditingAttributeValue("");
                               }
                             }}
                           />
@@ -683,8 +686,9 @@ function RouteComponent() {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              addValueToAttribute(attr.id, newAttributeValue);
-                              setNewAttributeValue("");
+                              addValueToAttribute(attr.id, editingAttributeValue);
+                              setEditingAttributeId(null);
+                              setEditingAttributeValue("");
                             }}
                           >
                             <Plus className="h-4 w-4" />
