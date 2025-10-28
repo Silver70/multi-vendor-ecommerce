@@ -24,12 +24,19 @@ namespace EcommerceApi.Controllers
         /// </summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<AttributeDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<List<AttributeDto>>> GetAttributes()
+        public async Task<ActionResult<List<AttributeDto>>> GetAttributes([FromQuery] bool? popular = null)
         {
             try
             {
-                var attributes = await _context.ProductAttributes
-                    .Include(a => a.Values)
+                IQueryable<ProductAttribute> query = _context.ProductAttributes.Include(a => a.Values);
+
+                // Filter by popularity if requested
+                if (popular.HasValue && popular.Value)
+                {
+                    query = query.Where(a => a.IsPopular).OrderBy(a => a.DisplayOrder);
+                }
+
+                var attributes = await query
                     .Select(a => new AttributeDto
                     {
                         Id = a.Id,

@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
+import { AttributeBrowserModal } from "~/components/AttributeBrowserModal";
 
 import {
   categoryQueries,
@@ -42,6 +43,7 @@ export const Route = createFileRoute("/dashboard/inventory/products/create")({
     const { queryClient } = context;
     queryClient.prefetchQuery(categoryQueries.getAll());
     queryClient.prefetchQuery(vendorQueries.getAll());
+    queryClient.prefetchQuery(attributeQueries.getPopular());
     queryClient.prefetchQuery(attributeQueries.getAll());
   },
 });
@@ -68,15 +70,24 @@ interface ProductFormData {
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const { data: categoriesResponse } = useQuery(categoryQueries.getAll());
   const { data: vendorsResponse } = useQuery(vendorQueries.getAll());
-  const { data: globalAttributes } = useQuery(attributeQueries.getAll());
+  const { data: popularAttributes, isLoading: isLoadingPopular } = useQuery(
+    attributeQueries.getPopular()
+  );
+  const { data: allAttributes, isLoading: isLoadingAll } = useQuery(
+    attributeQueries.getAll()
+  );
 
   const categories = categoriesResponse?.items || [];
   const vendors = vendorsResponse?.items || [];
-  const availableGlobalAttributes = globalAttributes || [];
+  const availablePopularAttributes = popularAttributes || [];
+  const availableAllAttributes = allAttributes || [];
+
+  // State for attribute browser modal
+  const [isAttributeBrowserOpen, setIsAttributeBrowserOpen] =
+    React.useState(false);
 
   // Build hierarchical category structure
   const categoryHierarchy = React.useMemo(() => {
@@ -502,14 +513,17 @@ function RouteComponent() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Available Global Attributes */}
-                {availableGlobalAttributes.length > 0 && (
+                {/* Popular Global Attributes - Quick Add Section */}
+                {availablePopularAttributes.length > 0 && (
                   <div className="space-y-3 border rounded-lg p-4 bg-blue-50">
-                    <h4 className="font-semibold text-sm text-blue-900">
-                      Available Global Attributes
-                    </h4>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold text-sm text-blue-900">
+                        Popular Attributes
+                      </h4>
+                      <p className="text-xs text-blue-700">Quick add</p>
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                      {availableGlobalAttributes
+                      {availablePopularAttributes
                         .filter((ga) => !attributeExists(ga.name))
                         .map((globalAttr) => (
                           <Button
@@ -525,13 +539,43 @@ function RouteComponent() {
                           </Button>
                         ))}
                     </div>
-                    {availableGlobalAttributes.every((ga) =>
-                      attributeExists(ga.name)
-                    ) && (
-                      <p className="text-xs text-blue-700">
-                        All global attributes already added
-                      </p>
+                    {availablePopularAttributes.length > 0 &&
+                      availablePopularAttributes.every((ga) =>
+                        attributeExists(ga.name)
+                      ) && (
+                        <p className="text-xs text-blue-700">
+                          All popular attributes added
+                        </p>
+                      )}
+                    {availablePopularAttributes.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-blue-600 hover:text-blue-700 h-auto p-0"
+                        onClick={() => setIsAttributeBrowserOpen(true)}
+                      >
+                        View All Attributes →
+                      </Button>
                     )}
+                  </div>
+                )}
+
+                {/* If no popular attributes, show View All button directly */}
+                {availablePopularAttributes.length === 0 && (
+                  <div className="border rounded-lg p-4 bg-gray-50 text-center space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Browse from all available attributes
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsAttributeBrowserOpen(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Browse Attributes
+                    </Button>
                   </div>
                 )}
 
@@ -563,7 +607,7 @@ function RouteComponent() {
                 {attributes.length > 0 && (
                   <div className="space-y-4">
                     {attributes.map((attr) => {
-                      const isGlobal = availableGlobalAttributes.some(
+                      const isGlobal = availableAllAttributes.some(
                         (ga) =>
                           ga.name.toLowerCase() === attr.name.toLowerCase()
                       );
@@ -1070,6 +1114,16 @@ function RouteComponent() {
           </div>
         )}
       </form>
+
+      {/* Attribute Browser Modal */}
+      <AttributeBrowserModal
+        open={isAttributeBrowserOpen}
+        onOpenChange={setIsAttributeBrowserOpen}
+        attributes={availableAllAttributes}
+        selectedAttributeNames={attributes.map((attr) => attr.name)}
+        onSelectAttribute={addGlobalAttribute}
+        isLoading={isLoadingAll}
+      />
     </div>
   );
 }

@@ -195,10 +195,28 @@ export const updateCompositeProduct = createServerFn({ method: "POST" })
   });
 
 // Get all global attributes
-export const getGlobalAttributes = createServerFn({ method: "GET" }).handler(
+export const getGlobalAttributes = createServerFn({ method: "GET" })
+  .inputValidator((d: { popular?: boolean } | undefined) => d ?? {})
+  .handler(async ({ data }) => {
+    const response = await axios.get<GlobalAttribute[]>(
+      `${API_BASE_URL}/api/Attributes`,
+      {
+        params: {
+          ...(data?.popular !== undefined && { popular: data.popular }),
+        },
+      }
+    );
+    return response.data;
+  });
+
+// Get popular global attributes only
+export const getPopularAttributes = createServerFn({ method: "GET" }).handler(
   async () => {
     const response = await axios.get<GlobalAttribute[]>(
-      `${API_BASE_URL}/api/Attributes`
+      `${API_BASE_URL}/api/Attributes`,
+      {
+        params: { popular: true },
+      }
     );
     return response.data;
   }
@@ -238,11 +256,20 @@ export const productQueries = {
 
 export const attributeQueries = {
   all: () => ["globalAttributes"] as const,
+  popular: () => ["globalAttributes", "popular"] as const,
 
   getAll: () =>
     queryOptions({
       queryKey: attributeQueries.all(),
       queryFn: () => getGlobalAttributes(),
+      staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    }),
+
+  getPopular: () =>
+    queryOptions({
+      queryKey: attributeQueries.popular(),
+      queryFn: () => getPopularAttributes(),
+      staleTime: 10 * 60 * 1000, // Cache for 10 minutes
     }),
 };
 
