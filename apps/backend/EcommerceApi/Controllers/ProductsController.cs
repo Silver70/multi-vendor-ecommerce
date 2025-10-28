@@ -94,6 +94,21 @@ namespace EcommerceApi.Controllers
                         attributeValueMap);
                 }
 
+                // Save product images if provided
+                if (createDto.Images.Any())
+                {
+                    var productImages = createDto.Images.Select((img, index) => new Models.ProductImage
+                    {
+                        Id = Guid.NewGuid(),
+                        ProductId = product.Id,
+                        ImageUrl = img.ImageUrl,
+                        IsPrimary = img.IsPrimary || index == 0, // First image is primary if none specified
+                    }).ToList();
+
+                    _context.ProductImages.AddRange(productImages);
+                    await _context.SaveChangesAsync();
+                }
+
                 await transaction.CommitAsync();
 
                 // Build response

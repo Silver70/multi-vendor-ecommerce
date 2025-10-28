@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Plus, X, Trash2, ChevronDown, Upload, ImagePlus } from "lucide-react";
+import { Plus, X, Trash2, ChevronDown, Upload, ImagePlus, Loader } from "lucide-react";
+import { useS3Upload } from "~/hooks/useS3Upload";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -125,9 +126,10 @@ function RouteComponent() {
 
   // Product Images State
   const [productImages, setProductImages] = React.useState<
-    { id: string; preview: string; file?: File }[]
+    { id: string; preview: string; file?: File; s3Url?: string; isUploading?: boolean; uploadError?: string }[]
   >([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { uploadFileToS3 } = useS3Upload();
 
   // State to track which variant groups are expanded on the create page
   const [expandedVariantGroups, setExpandedVariantGroups] = React.useState<
@@ -147,7 +149,7 @@ function RouteComponent() {
   // Create Product Mutation
   const createProductMutation = useCreateProduct();
 
-  // Handle image file selection
+  // Handle image file selection and upload to S3
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -155,17 +157,70 @@ function RouteComponent() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file.type.startsWith("image/")) {
+        const imageId = Math.random().toString(36).substring(2, 11);
+
+        // Create preview immediately
         const reader = new FileReader();
         reader.onload = (event) => {
           const preview = event.target?.result as string;
           setProductImages((prev) => [
             ...prev,
             {
-              id: Math.random().toString(36).substring(2, 11),
+              id: imageId,
               preview,
               file,
+              isUploading: true,
             },
           ]);
+
+          // Start upload in background (not awaited in event handler)
+          uploadFileToS3(file)
+            .then((uploadResult) => {
+              if (uploadResult) {
+                // Update the image with S3 URL
+                setProductImages((prev) =>
+                  prev.map((img) =>
+                    img.id === imageId
+                      ? {
+                          ...img,
+                          s3Url: uploadResult.s3Url,
+                          isUploading: false,
+                          uploadError: undefined,
+                        }
+                      : img
+                  )
+                );
+              } else {
+                // Keep the image but mark it as failed
+                setProductImages((prev) =>
+                  prev.map((img) =>
+                    img.id === imageId
+                      ? {
+                          ...img,
+                          isUploading: false,
+                          uploadError: "Upload failed. Please try again.",
+                        }
+                      : img
+                  )
+                );
+              }
+            })
+            .catch((error) => {
+              console.error("Upload error:", error);
+              // Keep the image but show error
+              const errorMsg = error instanceof Error ? error.message : "Upload failed";
+              setProductImages((prev) =>
+                prev.map((img) =>
+                  img.id === imageId
+                    ? {
+                        ...img,
+                        isUploading: false,
+                        uploadError: errorMsg,
+                      }
+                    : img
+                )
+              );
+            });
         };
         reader.readAsDataURL(file);
       }
@@ -331,6 +386,24 @@ function RouteComponent() {
 
   // Handle form submission with React Hook Form
   const onSubmit = handleSubmit(async (formData) => {
+    // Check if there are any images still uploading
+    const uploadingImages = productImages.filter((img) => img.isUploading);
+    if (uploadingImages.length > 0) {
+      alert("Please wait for all images to finish uploading before submitting.");
+      return;
+    }
+
+    // Check if there are any failed uploads and warn user
+    const failedImages = productImages.filter((img) => img.uploadError);
+    if (failedImages.length > 0) {
+      const confirmSubmit = window.confirm(
+        `${failedImages.length} image(s) failed to upload. Continue without them?`
+      );
+      if (!confirmSubmit) {
+        return;
+      }
+    }
+
     const productData: CreateCompositeProductDto = {
       productInfo: {
         name: formData.productName,
@@ -349,10 +422,16 @@ function RouteComponent() {
         price: parseFloat(String(v.price)),
         stock: parseInt(String(v.stock)),
       })),
+      images: productImages
+        .filter((img) => img.s3Url && !img.uploadError) // Only include successfully uploaded images
+        .map((img, index) => ({
+          imageUrl: img.s3Url!,
+          isPrimary: index === 0, // First image is primary
+        })),
     };
 
     createProductMutation.mutate(productData, {
-      onSuccess: (createdProduct) => {
+      onSuccess: () => {
         navigate({ to: "/dashboard/inventory/products" });
       },
     });
@@ -460,8 +539,28 @@ function RouteComponent() {
                           <img
                             src={image.preview}
                             alt={`Product image ${index + 1}`}
-                            className="w-full h-full object-cover"
+                            className={`w-full h-full object-cover ${
+                              image.uploadError ? "opacity-50" : ""
+                            }`}
                           />
+                          {image.isUploading && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <Loader className="h-6 w-6 text-white animate-spin" />
+                            </div>
+                          )}
+                          {image.uploadError && !image.isUploading && (
+                            <div className="absolute inset-0 bg-red-500/90 flex items-center justify-center p-2">
+                              <div className="text-white text-xs text-center">
+                                <p className="font-semibold mb-1">Upload Failed</p>
+                                <p>{image.uploadError}</p>
+                              </div>
+                            </div>
+                          )}
+                          {image.s3Url && !image.isUploading && !image.uploadError && (
+                            <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                              Uploaded
+                            </div>
+                          )}
                         </div>
                         <Button
                           type="button"
@@ -469,10 +568,11 @@ function RouteComponent() {
                           size="sm"
                           className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => removeImage(image.id)}
+                          disabled={image.isUploading}
                         >
                           <X className="h-3 w-3" />
                         </Button>
-                        {index === 0 && (
+                        {index === 0 && !image.uploadError && (
                           <div className="absolute bottom-1 left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded">
                             Primary
                           </div>

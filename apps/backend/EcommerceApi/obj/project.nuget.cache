@@ -1,9 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "sMVIoSKVp7xvGrKn36OpfInJrpyiTWDozvsZsSDSOWKHdTkvD9TKtJIM3jgR0j3AMNLi1UnuXryzta57FLXxVQ==",
+  "dgSpecHash": "sxfeTwaZQ7kIyzgjEF7StlkcEoWThw2z+8LXFb+D9Q/D8aYUqD6yfmqYCXOjRkqXX5uLFSaZawCvFjGxxPcS8w==",
   "success": true,
   "projectFilePath": "/home/samee/projects/multi-vendor-ecommerce-app/apps/backend/EcommerceApi/EcommerceApi.csproj",
   "expectedPackageFiles": [
+    "/home/samee/.nuget/packages/awssdk.core/4.0.1.3/awssdk.core.4.0.1.3.nupkg.sha512",
+    "/home/samee/.nuget/packages/awssdk.s3/4.0.8/awssdk.s3.4.0.8.nupkg.sha512",
     "/home/samee/.nuget/packages/azure.core/1.38.0/azure.core.1.38.0.nupkg.sha512",
     "/home/samee/.nuget/packages/azure.identity/1.11.4/azure.identity.1.11.4.nupkg.sha512",
     "/home/samee/.nuget/packages/bcrypt.net-next/4.0.3/bcrypt.net-next.4.0.3.nupkg.sha512",

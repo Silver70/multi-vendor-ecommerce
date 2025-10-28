@@ -294,3 +294,5 @@
 /home/samee/projects/multi-vendor-ecommerce-app/apps/backend/EcommerceApi/bin/Debug/net8.0/Microsoft.Extensions.Logging.Debug.dll
 /home/samee/projects/multi-vendor-ecommerce-app/apps/backend/EcommerceApi/bin/Debug/net8.0/Microsoft.Extensions.ObjectPool.dll
 /home/samee/projects/multi-vendor-ecommerce-app/apps/backend/EcommerceApi/bin/Debug/net8.0/NodaTime.dll
+/home/samee/projects/multi-vendor-ecommerce-app/apps/backend/EcommerceApi/bin/Debug/net8.0/AWSSDK.Core.dll
+/home/samee/projects/multi-vendor-ecommerce-app/apps/backend/EcommerceApi/bin/Debug/net8.0/AWSSDK.S3.dll

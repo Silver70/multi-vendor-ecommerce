@@ -4,6 +4,8 @@ using EcommerceApi.Utils;
 using EcommerceApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Amazon.S3;
+using Amazon;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,6 +65,25 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<SlugGenerator>();
 builder.Services.AddScoped<VariantGenerationService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+
+// Configure AWS S3
+var awsConfig = builder.Configuration.GetSection("AWS");
+var accessKey = awsConfig["AccessKey"];
+var secretKey = awsConfig["SecretKey"];
+var region = awsConfig["Region"];
+
+if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secretKey))
+{
+    throw new InvalidOperationException("AWS credentials (AccessKey and SecretKey) are not configured in appsettings.");
+}
+
+// Register S3 client
+builder.Services.AddSingleton<IAmazonS3>(new AmazonS3Client(
+    accessKey,
+    secretKey,
+    Amazon.RegionEndpoint.GetBySystemName(region ?? "us-east-1")));
+
+builder.Services.AddScoped<IS3Service, S3Service>();
 
 var app = builder.Build();
 

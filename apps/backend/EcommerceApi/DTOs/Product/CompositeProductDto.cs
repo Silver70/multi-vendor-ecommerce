@@ -13,6 +13,8 @@ namespace EcommerceApi.DTOs.Product
         public List<ProductAttributeInputDto> Attributes { get; set; } = new();
 
         public List<VariantInputDto> Variants { get; set; } = new();
+
+        public List<ProductImageInputDto> Images { get; set; } = new();
     }
 
     /// <summary>
@@ -107,5 +109,15 @@ namespace EcommerceApi.DTOs.Product
         public int Stock { get; set; }
         public Dictionary<string, string> Attributes { get; set; } = new();
         public DateTime CreatedAt { get; set; }
+    }
+
+    public class ProductImageInputDto
+    {
+        [Required(ErrorMessage = "Image URL is required")]
+        [Url(ErrorMessage = "Invalid URL format")]
+        [MaxLength(500, ErrorMessage = "Image URL cannot exceed 500 characters")]
+        public string ImageUrl { get; set; } = string.Empty;
+
+        public bool IsPrimary { get; set; } = false;
     }
 }

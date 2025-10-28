@@ -56,10 +56,16 @@ export interface ProductInfoDto {
   isActive?: boolean;
 }
 
+export interface ProductImageInput {
+  imageUrl: string;
+  isPrimary: boolean;
+}
+
 export interface CreateCompositeProductDto {
   productInfo: ProductInfoDto;
   attributes: ProductAttributeInput[];
   variants: VariantInput[];
+  images?: ProductImageInput[];
 }
 
 export interface ProductAttributeOutput {
