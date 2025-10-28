@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Plus, X, Trash2, ChevronDown } from "lucide-react";
+import { Plus, X, Trash2, ChevronDown, Upload, ImagePlus } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -112,6 +112,12 @@ function RouteComponent() {
   const [editingAttributeValue, setEditingAttributeValue] = React.useState("");
   const [variants, setVariants] = React.useState<VariantInput[]>([]);
 
+  // Product Images State
+  const [productImages, setProductImages] = React.useState<
+    { id: string; preview: string; file?: File }[]
+  >([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   // State to track which variant groups are expanded on the create page
   const [expandedVariantGroups, setExpandedVariantGroups] = React.useState<
     Set<string>
@@ -129,6 +135,41 @@ function RouteComponent() {
 
   // Create Product Mutation
   const createProductMutation = useCreateProduct();
+
+  // Handle image file selection
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const preview = event.target?.result as string;
+          setProductImages((prev) => [
+            ...prev,
+            {
+              id: Math.random().toString(36).substring(2, 11),
+              preview,
+              file,
+            },
+          ]);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Remove image
+  const removeImage = (imageId: string) => {
+    setProductImages((prev) => prev.filter((img) => img.id !== imageId));
+  };
 
   // Check if attribute already exists (case-insensitive)
   const attributeExists = (name: string) => {
@@ -307,7 +348,7 @@ function RouteComponent() {
   });
 
   return (
-    <div className="container mx-auto py-6 max-w-5xl">
+    <div className="container mx-auto py-6 max-w-6xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">
           Create New Product
@@ -326,7 +367,9 @@ function RouteComponent() {
             <Card>
               <CardHeader>
                 <CardTitle>Product Information</CardTitle>
-                <CardDescription>Basic details about your product</CardDescription>
+                <CardDescription>
+                  Basic details about your product
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -363,6 +406,90 @@ function RouteComponent() {
                     rows={4}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Product Images */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Product Images</CardTitle>
+                <CardDescription>
+                  Upload product images (JPG, PNG, WebP)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Upload Area */}
+                <div
+                  className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm font-medium text-foreground">
+                    Click to upload or drag and drop
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    PNG, JPG, WebP up to 10MB
+                  </p>
+                </div>
+
+                {/* Image Preview Grid */}
+                {productImages.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {productImages.map((image, index) => (
+                      <div key={image.id} className="relative group">
+                        <div className="relative overflow-hidden rounded-lg bg-muted aspect-square">
+                          <img
+                            src={image.preview}
+                            alt={`Product image ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeImage(image.id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                        {index === 0 && (
+                          <div className="absolute bottom-1 left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                            Primary
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {productImages.length === 0 && (
+                  <div className="text-center py-4">
+                    <ImagePlus className="h-6 w-6 text-muted-foreground mx-auto mb-2 opacity-50" />
+                    <p className="text-sm text-muted-foreground">
+                      No images uploaded yet
+                    </p>
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImagePlus className="h-4 w-4 mr-2" />
+                  Add More Images
+                </Button>
               </CardContent>
             </Card>
 
@@ -437,7 +564,8 @@ function RouteComponent() {
                   <div className="space-y-4">
                     {attributes.map((attr) => {
                       const isGlobal = availableGlobalAttributes.some(
-                        (ga) => ga.name.toLowerCase() === attr.name.toLowerCase()
+                        (ga) =>
+                          ga.name.toLowerCase() === attr.name.toLowerCase()
                       );
 
                       return (
@@ -450,7 +578,10 @@ function RouteComponent() {
                                     {attr.name}
                                   </h4>
                                   {isGlobal && (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
                                       Global
                                     </Badge>
                                   )}
@@ -570,6 +701,7 @@ function RouteComponent() {
 
           {/* Right Column - Category, Vendor, and Status */}
           <div className="lg:col-span-1">
+            {/* Product Settings */}
             <Card className="h-fit sticky top-6">
               <CardHeader>
                 <CardTitle>Product Settings</CardTitle>
