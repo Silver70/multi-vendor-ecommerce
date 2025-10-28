@@ -106,14 +106,16 @@ function RouteComponent() {
   // Attributes and Variants State (complex nested state, kept in React.useState)
   const [attributes, setAttributes] = React.useState<Attribute[]>([]);
   const [newAttributeName, setNewAttributeName] = React.useState("");
-  const [editingAttributeId, setEditingAttributeId] = React.useState<string | null>(null);
+  const [editingAttributeId, setEditingAttributeId] = React.useState<
+    string | null
+  >(null);
   const [editingAttributeValue, setEditingAttributeValue] = React.useState("");
   const [variants, setVariants] = React.useState<VariantInput[]>([]);
 
   // State to track which variant groups are expanded on the create page
-  const [expandedVariantGroups, setExpandedVariantGroups] = React.useState<Set<string>>(
-    new Set()
-  );
+  const [expandedVariantGroups, setExpandedVariantGroups] = React.useState<
+    Set<string>
+  >(new Set());
 
   const toggleVariantGroupExpansion = (groupValue: string) => {
     const newExpanded = new Set(expandedVariantGroups);
@@ -316,575 +318,603 @@ function RouteComponent() {
       </div>
 
       <form onSubmit={onSubmit} className="space-y-6">
-        {/* Product Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Information</CardTitle>
-            <CardDescription>Basic details about your product</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">
-                  Product Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  placeholder="e.g., Premium Cotton T-Shirt"
-                  {...register("productName", { required: true })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="basePrice">
-                  Base Price <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="basePrice"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="0.00"
-                  {...register("basePrice", { required: true })}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe your product..."
-                {...register("description")}
-                rows={4}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">
-                  Category <span className="text-red-500">*</span>
-                </Label>
-                <CustomSelect
-                  id="category"
-                  value={categoryId}
-                  onChange={(value) => setValue("categoryId", value)}
-                  placeholder="Select a category"
-                  options={categoryHierarchy.map((category) => ({
-                    value: category.id,
-                    label: category.displayName,
-                  }))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="vendor">
-                  Vendor <span className="text-red-500">*</span>
-                </Label>
-                <CustomSelect
-                  id="vendor"
-                  value={vendorId}
-                  onChange={(value) => setValue("vendorId", value)}
-                  placeholder="Select a vendor"
-                  options={vendors.map((vendor) => ({
-                    value: vendor.id,
-                    label: vendor.name,
-                  }))}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                {...register("isActive")}
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <Label htmlFor="isActive" className="cursor-pointer">
-                Product is active
-              </Label>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Product Attributes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Attributes</CardTitle>
-            <CardDescription>
-              Use global attributes or define custom ones
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Available Global Attributes */}
-            {availableGlobalAttributes.length > 0 && (
-              <div className="space-y-3 border rounded-lg p-4 bg-blue-50">
-                <h4 className="font-semibold text-sm text-blue-900">
-                  Available Global Attributes
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {availableGlobalAttributes
-                    .filter((ga) => !attributeExists(ga.name))
-                    .map((globalAttr) => (
-                      <Button
-                        key={globalAttr.id}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addGlobalAttribute(globalAttr)}
-                        className="bg-white hover:bg-blue-100"
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        {globalAttr.name}
-                      </Button>
-                    ))}
-                </div>
-                {availableGlobalAttributes.every((ga) =>
-                  attributeExists(ga.name)
-                ) && (
-                  <p className="text-xs text-blue-700">
-                    All global attributes already added
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Add Custom Attribute */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Create Custom Attribute
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Attribute name (e.g., Material, Brand)"
-                  value={newAttributeName}
-                  onChange={(e) => setNewAttributeName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addAttribute();
-                    }
-                  }}
-                />
-                <Button type="button" onClick={addAttribute} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Custom
-                </Button>
-              </div>
-            </div>
-
-            {/* Attributes List */}
-            {attributes.length > 0 && (
-              <div className="space-y-4">
-                {attributes.map((attr) => {
-                  const isGlobal = availableGlobalAttributes.some(
-                    (ga) => ga.name.toLowerCase() === attr.name.toLowerCase()
-                  );
-
-                  return (
-                    <Card key={attr.id} className="border-2">
-                      <CardContent className="pt-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-semibold text-lg">
-                                {attr.name}
-                              </h4>
-                              {isGlobal && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Global
-                                </Badge>
-                              )}
-                              {!isGlobal && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs bg-orange-50"
-                                >
-                                  Custom
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {attr.values.length} value(s)
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeAttribute(attr.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
-
-                        {/* Attribute Values */}
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {attr.values.map((val) => (
-                            <Badge
-                              key={val.id}
-                              variant="secondary"
-                              className="pl-3 pr-1"
-                            >
-                              {val.value}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  removeValueFromAttribute(attr.id, val.id)
-                                }
-                                className="ml-2 hover:text-red-500"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-
-                        {/* Add Value Input */}
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder={`Add ${attr.name.toLowerCase()} value`}
-                            value={
-                              editingAttributeId === attr.id
-                                ? editingAttributeValue
-                                : ""
-                            }
-                            onChange={(e) => {
-                              setEditingAttributeId(attr.id);
-                              setEditingAttributeValue(e.target.value);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                addValueToAttribute(attr.id, editingAttributeValue);
-                                setEditingAttributeId(null);
-                                setEditingAttributeValue("");
-                              }
-                            }}
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              addValueToAttribute(attr.id, editingAttributeValue);
-                              setEditingAttributeId(null);
-                              setEditingAttributeValue("");
-                            }}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Generate Variants Button */}
-            {attributes.length > 0 &&
-              attributes.every((a) => a.values.length > 0) && (
-                <Button
-                  type="button"
-                  onClick={generateVariants}
-                  variant="default"
-                  className="w-full"
-                >
-                  Generate Variants (
-                  {attributes.reduce(
-                    (acc, attr) => acc * attr.values.length,
-                    1
-                  )}{" "}
-                  combinations)
-                </Button>
-              )}
-          </CardContent>
-        </Card>
-
-        {/* Product Variants */}
-        {variants.length > 0 && (() => {
-          // Check if we should show grouped variants
-          const shouldGroupVariants =
-            variants.length > 0 && hasMultipleAttributes(variants as any);
-          const groupedData = shouldGroupVariants
-            ? groupEditPageVariants(variants)
-            : null;
-
-          return (
+        {/* Main 2-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Product Info and Attributes */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Product Information */}
             <Card>
               <CardHeader>
-                <CardTitle>Product Variants</CardTitle>
+                <CardTitle>Product Information</CardTitle>
+                <CardDescription>Basic details about your product</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">
+                    Product Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    placeholder="e.g., Premium Cotton T-Shirt"
+                    {...register("productName", { required: true })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="basePrice">
+                    Base Price <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="basePrice"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="0.00"
+                    {...register("basePrice", { required: true })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Describe your product..."
+                    {...register("description")}
+                    rows={4}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Product Attributes */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Product Attributes</CardTitle>
                 <CardDescription>
-                  Set pricing and stock for each variant combination
+                  Use global attributes or define custom ones
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {groupedData ? (
-                  // Grouped variants display
-                  <div className="space-y-2">
-                    {groupedData.groups.map((group) => (
-                      <div key={group.groupValue} className="border rounded-lg">
-                        {/* Group header */}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            toggleVariantGroupExpansion(group.groupValue)
-                          }
-                          className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex items-center gap-3 flex-1">
-                            <ChevronDown
-                              className={`h-5 w-5 transition-transform ${
-                                expandedVariantGroups.has(group.groupValue)
-                                  ? "transform rotate-0"
-                                  : "transform -rotate-90"
-                              }`}
-                            />
-                            <div className="text-left">
-                              <div className="font-semibold">
-                                {group.groupAttribute}: {group.groupValue}
+              <CardContent className="space-y-4">
+                {/* Available Global Attributes */}
+                {availableGlobalAttributes.length > 0 && (
+                  <div className="space-y-3 border rounded-lg p-4 bg-blue-50">
+                    <h4 className="font-semibold text-sm text-blue-900">
+                      Available Global Attributes
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {availableGlobalAttributes
+                        .filter((ga) => !attributeExists(ga.name))
+                        .map((globalAttr) => (
+                          <Button
+                            key={globalAttr.id}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addGlobalAttribute(globalAttr)}
+                            className="bg-white hover:bg-blue-100"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            {globalAttr.name}
+                          </Button>
+                        ))}
+                    </div>
+                    {availableGlobalAttributes.every((ga) =>
+                      attributeExists(ga.name)
+                    ) && (
+                      <p className="text-xs text-blue-700">
+                        All global attributes already added
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Add Custom Attribute */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Create Custom Attribute
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Attribute name (e.g., Material, Brand)"
+                      value={newAttributeName}
+                      onChange={(e) => setNewAttributeName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addAttribute();
+                        }
+                      }}
+                    />
+                    <Button type="button" onClick={addAttribute} size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Custom
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Attributes List */}
+                {attributes.length > 0 && (
+                  <div className="space-y-4">
+                    {attributes.map((attr) => {
+                      const isGlobal = availableGlobalAttributes.some(
+                        (ga) => ga.name.toLowerCase() === attr.name.toLowerCase()
+                      );
+
+                      return (
+                        <Card key={attr.id} className="border-2">
+                          <CardContent className="pt-4">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="font-semibold text-lg">
+                                    {attr.name}
+                                  </h4>
+                                  {isGlobal && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Global
+                                    </Badge>
+                                  )}
+                                  {!isGlobal && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs bg-orange-50"
+                                    >
+                                      Custom
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {attr.values.length} value(s)
+                                </p>
                               </div>
-                              <div className="text-sm text-muted-foreground">
-                                {group.variantsWithIndices.length} variant
-                                {group.variantsWithIndices.length !== 1
-                                  ? "s"
-                                  : ""}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeAttribute(attr.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+
+                            {/* Attribute Values */}
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {attr.values.map((val) => (
+                                <Badge
+                                  key={val.id}
+                                  variant="secondary"
+                                  className="pl-3 pr-1"
+                                >
+                                  {val.value}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      removeValueFromAttribute(attr.id, val.id)
+                                    }
+                                    className="ml-2 hover:text-red-500"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+
+                            {/* Add Value Input */}
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder={`Add ${attr.name.toLowerCase()} value`}
+                                value={
+                                  editingAttributeId === attr.id
+                                    ? editingAttributeValue
+                                    : ""
+                                }
+                                onChange={(e) => {
+                                  setEditingAttributeId(attr.id);
+                                  setEditingAttributeValue(e.target.value);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    addValueToAttribute(
+                                      attr.id,
+                                      editingAttributeValue
+                                    );
+                                    setEditingAttributeId(null);
+                                    setEditingAttributeValue("");
+                                  }
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  addValueToAttribute(
+                                    attr.id,
+                                    editingAttributeValue
+                                  );
+                                  setEditingAttributeId(null);
+                                  setEditingAttributeValue("");
+                                }}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Generate Variants Button */}
+                {attributes.length > 0 &&
+                  attributes.every((a) => a.values.length > 0) && (
+                    <Button
+                      type="button"
+                      onClick={generateVariants}
+                      variant="default"
+                      className="w-full"
+                    >
+                      Generate Variants (
+                      {attributes.reduce(
+                        (acc, attr) => acc * attr.values.length,
+                        1
+                      )}{" "}
+                      combinations)
+                    </Button>
+                  )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Category, Vendor, and Status */}
+          <div className="lg:col-span-1">
+            <Card className="h-fit sticky top-6">
+              <CardHeader>
+                <CardTitle>Product Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category">
+                    Category <span className="text-red-500">*</span>
+                  </Label>
+                  <CustomSelect
+                    id="category"
+                    value={categoryId}
+                    onChange={(value) => setValue("categoryId", value)}
+                    placeholder="Select a category"
+                    options={categoryHierarchy.map((category) => ({
+                      value: category.id,
+                      label: category.displayName,
+                    }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="vendor">
+                    Vendor <span className="text-red-500">*</span>
+                  </Label>
+                  <CustomSelect
+                    id="vendor"
+                    value={vendorId}
+                    onChange={(value) => setValue("vendorId", value)}
+                    placeholder="Select a vendor"
+                    options={vendors.map((vendor) => ({
+                      value: vendor.id,
+                      label: vendor.name,
+                    }))}
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    {...register("isActive")}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <Label htmlFor="isActive" className="cursor-pointer mb-0">
+                    Product is active
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Product Variants */}
+        {variants.length > 0 &&
+          (() => {
+            // Check if we should show grouped variants
+            const shouldGroupVariants =
+              variants.length > 0 && hasMultipleAttributes(variants as any);
+            const groupedData = shouldGroupVariants
+              ? groupEditPageVariants(variants)
+              : null;
+
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Product Variants</CardTitle>
+                  <CardDescription>
+                    Set pricing and stock for each variant combination
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {groupedData ? (
+                    // Grouped variants display
+                    <div className="space-y-2">
+                      {groupedData.groups.map((group) => (
+                        <div
+                          key={group.groupValue}
+                          className="border rounded-lg"
+                        >
+                          {/* Group header */}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              toggleVariantGroupExpansion(group.groupValue)
+                            }
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex items-center gap-3 flex-1">
+                              <ChevronDown
+                                className={`h-5 w-5 transition-transform ${
+                                  expandedVariantGroups.has(group.groupValue)
+                                    ? "transform rotate-0"
+                                    : "transform -rotate-90"
+                                }`}
+                              />
+                              <div className="text-left">
+                                <div className="font-semibold">
+                                  {group.groupAttribute}: {group.groupValue}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {group.variantsWithIndices.length} variant
+                                  {group.variantsWithIndices.length !== 1
+                                    ? "s"
+                                    : ""}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </button>
+                          </button>
 
-                        {/* Group content - variants */}
-                        {expandedVariantGroups.has(group.groupValue) && (
-                          <div className="border-t bg-muted/20 p-3 space-y-3">
-                            {group.variantsWithIndices.map(
-                              ({ index, variant }) => (
-                                <Card key={index} className="border">
-                                  <CardContent className="pt-4">
-                                    <div className="flex items-start gap-4">
-                                      <div className="flex-1 space-y-3">
-                                        {/* Variant Attributes Display */}
-                                        <div className="flex flex-wrap gap-2">
-                                          {Object.entries(
-                                            variant.attributes
-                                          ).map(([key, value]) => (
-                                            <Badge
-                                              key={key}
-                                              variant="outline"
-                                            >
-                                              {key}: {String(value)}
-                                            </Badge>
-                                          ))}
+                          {/* Group content - variants */}
+                          {expandedVariantGroups.has(group.groupValue) && (
+                            <div className="border-t bg-muted/20 p-3 space-y-3">
+                              {group.variantsWithIndices.map(
+                                ({ index, variant }) => (
+                                  <Card key={index} className="border">
+                                    <CardContent className="pt-4">
+                                      <div className="flex items-start gap-4">
+                                        <div className="flex-1 space-y-3">
+                                          {/* Variant Attributes Display */}
+                                          <div className="flex flex-wrap gap-2">
+                                            {Object.entries(
+                                              variant.attributes
+                                            ).map(([key, value]) => (
+                                              <Badge
+                                                key={key}
+                                                variant="outline"
+                                              >
+                                                {key}: {String(value)}
+                                              </Badge>
+                                            ))}
+                                          </div>
+
+                                          {/* Variant Fields */}
+                                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            <div className="space-y-1">
+                                              <Label
+                                                htmlFor={`sku-${index}`}
+                                                className="text-sm"
+                                              >
+                                                SKU (Optional)
+                                              </Label>
+                                              <Input
+                                                id={`sku-${index}`}
+                                                placeholder="SKU-001"
+                                                value={variant.sku || ""}
+                                                onChange={(e) =>
+                                                  updateVariant(
+                                                    index,
+                                                    "sku",
+                                                    e.target.value
+                                                  )
+                                                }
+                                              />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                              <Label
+                                                htmlFor={`price-${index}`}
+                                                className="text-sm"
+                                              >
+                                                Price{" "}
+                                                <span className="text-red-500">
+                                                  *
+                                                </span>
+                                              </Label>
+                                              <Input
+                                                id={`price-${index}`}
+                                                type="number"
+                                                step="0.01"
+                                                min="0.01"
+                                                placeholder="0.00"
+                                                value={variant.price}
+                                                onChange={(e) =>
+                                                  updateVariant(
+                                                    index,
+                                                    "price",
+                                                    parseFloat(
+                                                      e.target.value
+                                                    ) || 0
+                                                  )
+                                                }
+                                                required
+                                              />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                              <Label
+                                                htmlFor={`stock-${index}`}
+                                                className="text-sm"
+                                              >
+                                                Stock{" "}
+                                                <span className="text-red-500">
+                                                  *
+                                                </span>
+                                              </Label>
+                                              <Input
+                                                id={`stock-${index}`}
+                                                type="number"
+                                                min="0"
+                                                placeholder="0"
+                                                value={variant.stock}
+                                                onChange={(e) =>
+                                                  updateVariant(
+                                                    index,
+                                                    "stock",
+                                                    parseInt(e.target.value) ||
+                                                      0
+                                                  )
+                                                }
+                                                required
+                                              />
+                                            </div>
+                                          </div>
                                         </div>
 
-                                        {/* Variant Fields */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                          <div className="space-y-1">
-                                            <Label
-                                              htmlFor={`sku-${index}`}
-                                              className="text-sm"
-                                            >
-                                              SKU (Optional)
-                                            </Label>
-                                            <Input
-                                              id={`sku-${index}`}
-                                              placeholder="SKU-001"
-                                              value={variant.sku || ""}
-                                              onChange={(e) =>
-                                                updateVariant(
-                                                  index,
-                                                  "sku",
-                                                  e.target.value
-                                                )
-                                              }
-                                            />
-                                          </div>
-
-                                          <div className="space-y-1">
-                                            <Label
-                                              htmlFor={`price-${index}`}
-                                              className="text-sm"
-                                            >
-                                              Price{" "}
-                                              <span className="text-red-500">
-                                                *
-                                              </span>
-                                            </Label>
-                                            <Input
-                                              id={`price-${index}`}
-                                              type="number"
-                                              step="0.01"
-                                              min="0.01"
-                                              placeholder="0.00"
-                                              value={variant.price}
-                                              onChange={(e) =>
-                                                updateVariant(
-                                                  index,
-                                                  "price",
-                                                  parseFloat(e.target.value) ||
-                                                    0
-                                                )
-                                              }
-                                              required
-                                            />
-                                          </div>
-
-                                          <div className="space-y-1">
-                                            <Label
-                                              htmlFor={`stock-${index}`}
-                                              className="text-sm"
-                                            >
-                                              Stock{" "}
-                                              <span className="text-red-500">
-                                                *
-                                              </span>
-                                            </Label>
-                                            <Input
-                                              id={`stock-${index}`}
-                                              type="number"
-                                              min="0"
-                                              placeholder="0"
-                                              value={variant.stock}
-                                              onChange={(e) =>
-                                                updateVariant(
-                                                  index,
-                                                  "stock",
-                                                  parseInt(e.target.value) || 0
-                                                )
-                                              }
-                                              required
-                                            />
-                                          </div>
-                                        </div>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => removeVariant(index)}
+                                        >
+                                          <Trash2 className="h-4 w-4 text-red-500" />
+                                        </Button>
                                       </div>
-
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => removeVariant(index)}
-                                      >
-                                        <Trash2 className="h-4 w-4 text-red-500" />
-                                      </Button>
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  // Flat variants display (no grouping)
-                  variants.map((variant, index) => (
-                    <Card key={index} className="border">
-                      <CardContent className="pt-4">
-                        <div className="flex items-start gap-4">
-                          <div className="flex-1 space-y-3">
-                            {/* Variant Attributes Display */}
-                            <div className="flex flex-wrap gap-2">
-                              {Object.entries(variant.attributes).map(
-                                ([key, value]) => (
-                                  <Badge key={key} variant="outline">
-                                    {key}: {String(value)}
-                                  </Badge>
+                                    </CardContent>
+                                  </Card>
                                 )
                               )}
                             </div>
-
-                            {/* Variant Fields */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                              <div className="space-y-1">
-                                <Label
-                                  htmlFor={`sku-${index}`}
-                                  className="text-sm"
-                                >
-                                  SKU (Optional)
-                                </Label>
-                                <Input
-                                  id={`sku-${index}`}
-                                  placeholder="SKU-001"
-                                  value={variant.sku || ""}
-                                  onChange={(e) =>
-                                    updateVariant(index, "sku", e.target.value)
-                                  }
-                                />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    // Flat variants display (no grouping)
+                    variants.map((variant, index) => (
+                      <Card key={index} className="border">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-1 space-y-3">
+                              {/* Variant Attributes Display */}
+                              <div className="flex flex-wrap gap-2">
+                                {Object.entries(variant.attributes).map(
+                                  ([key, value]) => (
+                                    <Badge key={key} variant="outline">
+                                      {key}: {String(value)}
+                                    </Badge>
+                                  )
+                                )}
                               </div>
 
-                              <div className="space-y-1">
-                                <Label
-                                  htmlFor={`price-${index}`}
-                                  className="text-sm"
-                                >
-                                  Price{" "}
-                                  <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                  id={`price-${index}`}
-                                  type="number"
-                                  step="0.01"
-                                  min="0.01"
-                                  placeholder="0.00"
-                                  value={variant.price}
-                                  onChange={(e) =>
-                                    updateVariant(
-                                      index,
-                                      "price",
-                                      parseFloat(e.target.value) || 0
-                                    )
-                                  }
-                                  required
-                                />
-                              </div>
+                              {/* Variant Fields */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div className="space-y-1">
+                                  <Label
+                                    htmlFor={`sku-${index}`}
+                                    className="text-sm"
+                                  >
+                                    SKU (Optional)
+                                  </Label>
+                                  <Input
+                                    id={`sku-${index}`}
+                                    placeholder="SKU-001"
+                                    value={variant.sku || ""}
+                                    onChange={(e) =>
+                                      updateVariant(
+                                        index,
+                                        "sku",
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </div>
 
-                              <div className="space-y-1">
-                                <Label
-                                  htmlFor={`stock-${index}`}
-                                  className="text-sm"
-                                >
-                                  Stock{" "}
-                                  <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                  id={`stock-${index}`}
-                                  type="number"
-                                  min="0"
-                                  placeholder="0"
-                                  value={variant.stock}
-                                  onChange={(e) =>
-                                    updateVariant(
-                                      index,
-                                      "stock",
-                                      parseInt(e.target.value) || 0
-                                    )
-                                  }
-                                  required
-                                />
+                                <div className="space-y-1">
+                                  <Label
+                                    htmlFor={`price-${index}`}
+                                    className="text-sm"
+                                  >
+                                    Price{" "}
+                                    <span className="text-red-500">*</span>
+                                  </Label>
+                                  <Input
+                                    id={`price-${index}`}
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    placeholder="0.00"
+                                    value={variant.price}
+                                    onChange={(e) =>
+                                      updateVariant(
+                                        index,
+                                        "price",
+                                        parseFloat(e.target.value) || 0
+                                      )
+                                    }
+                                    required
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <Label
+                                    htmlFor={`stock-${index}`}
+                                    className="text-sm"
+                                  >
+                                    Stock{" "}
+                                    <span className="text-red-500">*</span>
+                                  </Label>
+                                  <Input
+                                    id={`stock-${index}`}
+                                    type="number"
+                                    min="0"
+                                    placeholder="0"
+                                    value={variant.stock}
+                                    onChange={(e) =>
+                                      updateVariant(
+                                        index,
+                                        "stock",
+                                        parseInt(e.target.value) || 0
+                                      )
+                                    }
+                                    required
+                                  />
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeVariant(index)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          );
-        })()}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeVariant(index)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
 
         {/* Form Actions */}
         <div className="flex items-center justify-end gap-4">
