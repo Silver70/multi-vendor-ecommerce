@@ -16,17 +16,20 @@ namespace EcommerceApi.Controllers
         private readonly ILogger<ProductsController> _logger;
         private readonly SlugGenerator _slugGenerator;
         private readonly VariantGenerationService _variantService;
+        private readonly IS3Service _s3Service;
 
         public ProductsController(
             AppDbContext context,
             ILogger<ProductsController> logger,
             SlugGenerator slugGenerator,
-            VariantGenerationService variantService)
+            VariantGenerationService variantService,
+            IS3Service s3Service)
         {
             _context = context;
             _logger = logger;
             _slugGenerator = slugGenerator;
             _variantService = variantService;
+            _s3Service = s3Service;
         }
 
         /// <summary>
@@ -97,6 +100,8 @@ namespace EcommerceApi.Controllers
                 // Save product images if provided
                 if (createDto.Images.Any())
                 {
+                    _logger.LogInformation("Creating {ImageCount} product images for product {ProductId}", createDto.Images.Count, product.Id);
+
                     var productImages = createDto.Images.Select((img, index) => new Models.ProductImage
                     {
                         Id = Guid.NewGuid(),
@@ -105,8 +110,15 @@ namespace EcommerceApi.Controllers
                         IsPrimary = img.IsPrimary || index == 0, // First image is primary if none specified
                     }).ToList();
 
+                    _logger.LogInformation("Adding {ImageCount} images to context", productImages.Count);
                     _context.ProductImages.AddRange(productImages);
-                    await _context.SaveChangesAsync();
+
+                    var savedCount = await _context.SaveChangesAsync();
+                    _logger.LogInformation("Saved {SavedCount} images to database", savedCount);
+                }
+                else
+                {
+                    _logger.LogInformation("No images provided for product {ProductId}", product.Id);
                 }
 
                 await transaction.CommitAsync();
@@ -364,6 +376,29 @@ namespace EcommerceApi.Controllers
                     return NotFound(new { message = $"Product with slug '{slug}' not found" });
                 }
 
+                // Generate pre-signed URLs for images
+                var imageUrls = new List<string>();
+                if (product.Images != null)
+                {
+                    foreach (var image in product.Images)
+                    {
+                        try
+                        {
+                            // Extract S3 key from the stored URL
+                            var s3Key = _s3Service.ExtractS3KeyFromUrl(image.ImageUrl);
+                            // Generate a pre-signed GET URL (valid for 1 hour)
+                            var presignedUrl = _s3Service.GeneratePresignedGetUrl(s3Key, expirationHours: 1);
+                            imageUrls.Add(presignedUrl);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error generating pre-signed URL for image {ImageUrl}", image.ImageUrl);
+                            // Fall back to original URL if pre-signed generation fails
+                            imageUrls.Add(image.ImageUrl);
+                        }
+                    }
+                }
+
                 var productDto = new ProductDetailsDto
                 {
                     Id = product.Id,
@@ -375,7 +410,7 @@ namespace EcommerceApi.Controllers
                     CategoryName = product.Category != null ? product.Category.Name : "",
                     VendorName = product.Vendor != null ? product.Vendor.Name : "",
                     IsActive = product.IsActive,
-                    ImageUrls = product.Images != null ? product.Images.Select(i => i.ImageUrl).ToList() : new List<string>(),
+                    ImageUrls = imageUrls,
                     Attributes = new List<ProductAttributeOutputDto>(),
                     Variants = new List<VariantDto>()
                 };
@@ -450,6 +485,29 @@ namespace EcommerceApi.Controllers
                     return NotFound(new { message = $"Product with ID {id} not found" });
                 }
 
+                // Generate pre-signed URLs for images
+                var imageUrls = new List<string>();
+                if (product.Images != null)
+                {
+                    foreach (var image in product.Images)
+                    {
+                        try
+                        {
+                            // Extract S3 key from the stored URL
+                            var s3Key = _s3Service.ExtractS3KeyFromUrl(image.ImageUrl);
+                            // Generate a pre-signed GET URL (valid for 1 hour)
+                            var presignedUrl = _s3Service.GeneratePresignedGetUrl(s3Key, expirationHours: 1);
+                            imageUrls.Add(presignedUrl);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error generating pre-signed URL for image {ImageUrl}", image.ImageUrl);
+                            // Fall back to original URL if pre-signed generation fails
+                            imageUrls.Add(image.ImageUrl);
+                        }
+                    }
+                }
+
                 var productDto = new ProductDetailsDto
                 {
                     Id = product.Id,
@@ -461,7 +519,7 @@ namespace EcommerceApi.Controllers
                     CategoryName = product.Category != null ? product.Category.Name : "",
                     VendorName = product.Vendor != null ? product.Vendor.Name : "",
                     IsActive = product.IsActive,
-                    ImageUrls = product.Images != null ? product.Images.Select(i => i.ImageUrl).ToList() : new List<string>(),
+                    ImageUrls = imageUrls,
                     Attributes = new List<ProductAttributeOutputDto>(),
                     Variants = new List<VariantDto>()
                 };

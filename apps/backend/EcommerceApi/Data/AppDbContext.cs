@@ -71,6 +71,20 @@ namespace EcommerceApi.Data
                 .WithOne(p => p.Order)
                 .HasForeignKey(p => p.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Product -> ProductImage (one-to-many)
+            modelBuilder.Entity<Product>()
+                .HasMany(p => p.Images)
+                .WithOne(pi => pi.Product)
+                .HasForeignKey(pi => pi.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ProductVariant -> ProductImage (one-to-many)
+            modelBuilder.Entity<ProductVariant>()
+                .HasMany(pv => pv.Images)
+                .WithOne(pi => pi.Variant)
+                .HasForeignKey(pi => pi.VariantId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

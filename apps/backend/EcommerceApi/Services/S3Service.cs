@@ -158,4 +158,39 @@ public class S3Service : IS3Service
             throw;
         }
     }
+
+    /// <summary>
+    /// Generate a pre-signed GET URL for viewing an object in S3.
+    /// Useful for retrieving private objects without making them public.
+    /// </summary>
+    /// <param name="s3Key">The S3 object key (path)</param>
+    /// <param name="expirationHours">How many hours the URL should be valid (default: 1 hour)</param>
+    /// <returns>A pre-signed URL valid for the specified duration</returns>
+    public string GeneratePresignedGetUrl(string s3Key, int expirationHours = 1)
+    {
+        try
+        {
+            var request = new GetPreSignedUrlRequest
+            {
+                BucketName = _bucketName,
+                Key = s3Key,
+                Expires = DateTime.UtcNow.AddHours(expirationHours),
+                Verb = HttpVerb.GET,
+            };
+
+            var url = _s3Client.GetPreSignedURL(request);
+
+            _logger.LogInformation(
+                "Generated pre-signed GET URL for S3 key: {S3Key}, expires in {Hours} hours",
+                s3Key,
+                expirationHours);
+
+            return url;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating pre-signed GET URL for S3 key: {S3Key}", s3Key);
+            throw;
+        }
+    }
 }

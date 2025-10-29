@@ -33,6 +33,14 @@ public interface IS3Service
     /// <param name="s3Url">The full S3 URL (e.g., https://bucket.s3.region.amazonaws.com/key)</param>
     /// <returns>The S3 object key</returns>
     string ExtractS3KeyFromUrl(string s3Url);
+
+    /// <summary>
+    /// Generates a pre-signed GET URL for viewing a private object in S3.
+    /// </summary>
+    /// <param name="s3Key">The S3 object key (path)</param>
+    /// <param name="expirationHours">How many hours the URL should be valid (default: 1 hour)</param>
+    /// <returns>A pre-signed URL valid for the specified duration</returns>
+    string GeneratePresignedGetUrl(string s3Key, int expirationHours = 1);
 }
 
 public class S3PresignedPostResponse

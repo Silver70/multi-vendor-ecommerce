@@ -9,13 +9,16 @@ public class ImageUploadController : ControllerBase
 {
     private readonly IS3Service _s3Service;
     private readonly ILogger<ImageUploadController> _logger;
+    private readonly IConfiguration _configuration;
 
     public ImageUploadController(
         IS3Service s3Service,
-        ILogger<ImageUploadController> logger)
+        ILogger<ImageUploadController> logger,
+        IConfiguration configuration)
     {
         _s3Service = s3Service;
         _logger = logger;
+        _configuration = configuration;
     }
 
     /// <summary>
@@ -65,11 +68,14 @@ public class ImageUploadController : ControllerBase
                 "Generated signed upload URL for file: {FileName}",
                 request.FileName);
 
+            var region = _configuration["AWS:Region"] ?? "us-east-1";
+
             return Ok(new GetSignedUrlResponse
             {
                 PresignedUrl = presignedPost.S3Url,
                 S3Key = presignedPost.S3Key,
                 S3Bucket = presignedPost.BucketName,
+                S3Region = region,
                 ExpiresAt = DateTime.UtcNow.AddHours(1),
             });
         }
@@ -121,6 +127,11 @@ public class GetSignedUrlResponse
     /// The S3 bucket name
     /// </summary>
     public string S3Bucket { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The AWS region where the bucket is located
+    /// </summary>
+    public string S3Region { get; set; } = string.Empty;
 
     /// <summary>
     /// When the pre-signed URL expires

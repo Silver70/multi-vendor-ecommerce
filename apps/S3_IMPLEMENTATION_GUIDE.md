@@ -1,11 +1,13 @@
 # S3 Image Upload Implementation Guide
 
 ## Overview
+
 This document explains the S3 image upload integration implemented for the multi-vendor e-commerce application. The system allows users to upload product images directly to AWS S3 without files passing through the backend server.
 
 ## Architecture
 
 ### High-Level Flow
+
 ```
 1. User selects images in frontend
 2. Frontend requests pre-signed URL from backend: POST /api/ImageUpload/get-signed-url
@@ -16,6 +18,7 @@ This document explains the S3 image upload integration implemented for the multi
 ```
 
 ### Key Benefits
+
 - **Security**: Users cannot directly upload to S3 without backend authorization
 - **Performance**: Images bypass backend, no server storage, reduced bandwidth
 - **Scalability**: S3 handles storage and delivery, CDN-ready
@@ -26,10 +29,12 @@ This document explains the S3 image upload integration implemented for the multi
 ### 1. Backend S3 Service
 
 **Files:**
+
 - `EcommerceApi/Services/IS3Service.cs` - Interface definition
 - `EcommerceApi/Services/S3Service.cs` - AWS SDK implementation
 
 **Key Methods:**
+
 - `GeneratePresignedPostAsync()` - Creates pre-signed upload URLs
 - `DeleteObjectAsync()` - Removes files from S3
 - `DeleteObjectsAsync()` - Batch deletes files
@@ -37,6 +42,7 @@ This document explains the S3 image upload integration implemented for the multi
 
 **Configuration:**
 Located in `appsettings.json`:
+
 ```json
 "AWS": {
   "AccessKey": "your-aws-access-key",
@@ -48,6 +54,7 @@ Located in `appsettings.json`:
 
 **Dependency Injection:**
 Registered in `Program.cs`:
+
 ```csharp
 builder.Services.AddScoped<IS3Service, S3Service>();
 ```
@@ -57,6 +64,7 @@ builder.Services.AddScoped<IS3Service, S3Service>();
 **File:** `EcommerceApi/Controllers/ImageUploadController.cs`
 
 **Endpoint:**
+
 ```
 POST /api/ImageUpload/get-signed-url
 Content-Type: application/json
@@ -69,6 +77,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "presignedUrl": "https://...",
@@ -79,8 +88,9 @@ Content-Type: application/json
 ```
 
 **Validations:**
+
 - File name required
-- Content type must be image/*
+- Content type must be image/\*
 - File size: 1 byte to 10MB
 - URLs expire in 1 hour
 
@@ -89,6 +99,7 @@ Content-Type: application/json
 **File:** `frontend/src/hooks/useS3Upload.ts`
 
 **Usage:**
+
 ```typescript
 const { uploadFileToS3, uploadMultipleFiles, uploadProgress, resetProgress } = useS3Upload();
 
@@ -113,6 +124,7 @@ uploadProgress = {
 **File:** `frontend/src/routes/dashboard/inventory/products/create.tsx`
 
 **Features:**
+
 - Real-time upload progress with loading indicator
 - Shows "Uploaded" badge when complete
 - Prevents form submission until all images uploaded
@@ -120,12 +132,13 @@ uploadProgress = {
 - Graceful error handling with failed image removal
 
 **Image State:**
+
 ```typescript
 interface ProductImage {
   id: string;
-  preview: string;      // Local preview
-  file?: File;          // Original file
-  s3Url?: string;       // S3 URL after upload
+  preview: string; // Local preview
+  file?: File; // Original file
+  s3Url?: string; // S3 URL after upload
   isUploading?: boolean; // Upload in progress
 }
 ```
@@ -135,6 +148,7 @@ interface ProductImage {
 **Backend:** `EcommerceApi/DTOs/Product/CompositeProductDto.cs`
 
 Added:
+
 ```csharp
 public class ProductImageInputDto
 {
@@ -149,6 +163,7 @@ public List<ProductImageInputDto> Images { get; set; } = new();
 **Frontend:** `frontend/src/lib/queries/products.ts`
 
 Added:
+
 ```typescript
 export interface ProductImageInput {
   imageUrl: string;
@@ -167,6 +182,7 @@ Already supports storing image URLs. No changes needed.
 
 **Product Controller Update:**
 `ProductsController.cs` - CreateCompositeProduct method now:
+
 1. Saves variants as before
 2. Saves product images with S3 URLs from request
 3. Sets first image as primary if not specified
@@ -174,6 +190,7 @@ Already supports storing image URLs. No changes needed.
 ## Setup Instructions
 
 ### Prerequisites
+
 - AWS S3 bucket created
 - AWS IAM user with S3 upload permissions
 - Access Key ID and Secret Access Key
@@ -181,6 +198,7 @@ Already supports storing image URLs. No changes needed.
 ### Configuration Steps
 
 1. **Update appsettings.json** with AWS credentials:
+
 ```json
 "AWS": {
   "AccessKey": "AKIAIOSFODNN7EXAMPLE",
@@ -204,20 +222,9 @@ Configure your S3 bucket CORS to allow frontend uploads:
 ```json
 [
   {
-    "AllowedHeaders": [
-      "Content-Type",
-      "Authorization"
-    ],
-    "AllowedMethods": [
-      "PUT",
-      "POST",
-      "GET",
-      "DELETE"
-    ],
-    "AllowedOrigins": [
-      "http://localhost:3000",
-      "https://yourdomain.com"
-    ],
+    "AllowedHeaders": ["Content-Type", "Authorization"],
+    "AllowedMethods": ["PUT", "POST", "GET", "DELETE"],
+    "AllowedOrigins": ["http://localhost:3000", "https://yourdomain.com"],
     "ExposeHeaders": [],
     "MaxAgeSeconds": 3000
   }
@@ -247,6 +254,7 @@ frontend/
 ## Testing the Implementation
 
 ### Test the Signed URL Endpoint
+
 ```bash
 curl -X POST http://localhost:5176/api/ImageUpload/get-signed-url \
   -H "Content-Type: application/json" \
@@ -258,6 +266,7 @@ curl -X POST http://localhost:5176/api/ImageUpload/get-signed-url \
 ```
 
 Expected response:
+
 ```json
 {
   "presignedUrl": "https://...",
@@ -268,6 +277,7 @@ Expected response:
 ```
 
 ### Test the Product Create Form
+
 1. Navigate to `/dashboard/inventory/products/create`
 2. Select images - they should upload automatically
 3. Watch for "Uploaded" badge confirmation
@@ -277,11 +287,13 @@ Expected response:
 ## Error Handling
 
 ### Frontend Errors
+
 - **Upload URL Request Failed**: Network error, AWS credentials invalid
 - **S3 Upload Failed**: Network timeout, file too large, invalid file type
 - **Upload Images Removed**: Automatically removed on failure, user notified
 
 ### Backend Errors
+
 - **Invalid File Size**: Returns 400 Bad Request
 - **Invalid Content Type**: Returns 400 Bad Request
 - **AWS Credentials Missing**: Throws during app startup
@@ -290,16 +302,19 @@ Expected response:
 ## Performance Notes
 
 ### Image Upload
+
 - Direct to S3: ~2-10MB takes 2-15 seconds (depends on connection)
 - No backend processing or storage needed
 - Parallel uploads supported (loop over files)
 
 ### S3 URL Structure
+
 ```
 https://bucket-name.s3.region.amazonaws.com/products/YYYYMMDD/uuid-filename.jpg
 ```
 
 ### Expiration
+
 - Pre-signed URLs expire after 1 hour
 - No renewal needed - frontend must request new URL if needed
 - Uploaded files are permanent until deleted
@@ -316,13 +331,15 @@ https://bucket-name.s3.region.amazonaws.com/products/YYYYMMDD/uuid-filename.jpg
 ## Security Considerations
 
 ✅ **Implemented:**
+
 - Pre-signed URLs expire after 1 hour
 - Content-type validation on backend
 - File size limits (10MB max)
-- Only image/* MIME types allowed
+- Only image/\* MIME types allowed
 - AWS IAM credentials secured in backend
 
 ⚠️ **Recommendations:**
+
 - Use environment variables for AWS credentials in production
 - Add image content scanning (antivirus) via Lambda
 - Implement rate limiting on signed URL endpoint
@@ -333,21 +350,25 @@ https://bucket-name.s3.region.amazonaws.com/products/YYYYMMDD/uuid-filename.jpg
 ## Troubleshooting
 
 ### "AWS credentials are not configured"
+
 - Check appsettings.json has AccessKey and SecretKey
 - Credentials cannot be empty strings
 - Restart application after changing credentials
 
 ### CORS Errors When Uploading
+
 - Configure S3 bucket CORS (see instructions above)
 - Ensure frontend URL matches allowed origins
 - PUT method must be allowed in CORS
 
 ### Pre-signed URL Returns 403
+
 - AWS IAM user needs s3:GetObject and s3:PutObject permissions
 - Check bucket policy allows the IAM user
 - Verify region in config matches bucket region
 
 ### Images Not Showing in Product
+
 - Check ProductImage table for saved URLs
 - Verify S3 URL format is correct
 - Ensure S3 URLs are public or signed for display

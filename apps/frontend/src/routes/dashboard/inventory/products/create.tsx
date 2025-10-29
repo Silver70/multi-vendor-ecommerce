@@ -404,6 +404,16 @@ function RouteComponent() {
       }
     }
 
+    const uploadedImages = productImages
+      .filter((img) => img.s3Url && !img.uploadError) // Only include successfully uploaded images
+      .map((img, index) => ({
+        imageUrl: img.s3Url!,
+        isPrimary: index === 0, // First image is primary
+      }));
+
+    console.log("Product images state:", productImages);
+    console.log("Images to submit:", uploadedImages);
+
     const productData: CreateCompositeProductDto = {
       productInfo: {
         name: formData.productName,
@@ -422,13 +432,10 @@ function RouteComponent() {
         price: parseFloat(String(v.price)),
         stock: parseInt(String(v.stock)),
       })),
-      images: productImages
-        .filter((img) => img.s3Url && !img.uploadError) // Only include successfully uploaded images
-        .map((img, index) => ({
-          imageUrl: img.s3Url!,
-          isPrimary: index === 0, // First image is primary
-        })),
+      images: uploadedImages,
     };
+
+    console.log("Final product data being sent:", productData);
 
     createProductMutation.mutate(productData, {
       onSuccess: () => {

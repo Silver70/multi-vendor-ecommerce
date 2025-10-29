@@ -49,7 +49,7 @@ export const useS3Upload = () => {
           }
         );
 
-        const { presignedUrl, s3Key, s3Bucket } = signedUrlResponse.data;
+        const { presignedUrl, s3Key, s3Bucket, s3Region } = signedUrlResponse.data;
 
         // Step 2: Upload file directly to S3 using the pre-signed URL
         setUploadProgress({
@@ -75,7 +75,8 @@ export const useS3Upload = () => {
         });
 
         // Step 3: Construct the S3 URL (S3 returns 200 on successful PUT)
-        const s3Url = `https://${s3Bucket}.s3.ap-south-1.amazonaws.com/${s3Key}`;
+        // Use the region from the backend response
+        const s3Url = `https://${s3Bucket}.s3.${s3Region}.amazonaws.com/${s3Key}`;
 
         setUploadProgress({
           fileName: file.name,
