@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:5176";
@@ -25,6 +25,12 @@ export interface Vendor {
   website?: string;
 }
 
+export interface CreateVendorDto {
+  name: string;
+  contactEmail?: string;
+  website?: string;
+}
+
 // ============================================================================
 // Server Functions
 // ============================================================================
@@ -44,6 +50,17 @@ export const getVendors = createServerFn({ method: "GET" }).handler(
   }
 );
 
+// Create a new vendor
+export const createVendor = createServerFn({ method: "POST" })
+  .inputValidator((d: CreateVendorDto) => d)
+  .handler(async ({ data }) => {
+    const response = await axios.post<Vendor>(
+      `${API_BASE_URL}/api/Vendors`,
+      data
+    );
+    return response.data;
+  });
+
 // ============================================================================
 // Query Options (for use with useQuery)
 // ============================================================================
@@ -57,6 +74,23 @@ export const vendorQueries = {
       queryKey: vendorQueries.lists(),
       queryFn: () => getVendors(),
     }),
+};
+
+// ============================================================================
+// Mutation Hooks
+// ============================================================================
+
+export const useCreateVendor = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateVendorDto) => {
+      return await createVendor({ data });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: vendorQueries.lists() });
+    },
+  });
 };
 
 // ============================================================================

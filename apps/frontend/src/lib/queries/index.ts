@@ -206,12 +206,16 @@ export {
 export {
   // Server Functions
   getVendors,
+  createVendor,
   // Query Builders
   vendorQueries,
+  // Mutations
+  useCreateVendor,
   // Legacy Exports
   getVendorsQueryOptions,
   // Types
   type Vendor,
+  type CreateVendorDto,
 } from "./vendors";
 
 // ============================================================================

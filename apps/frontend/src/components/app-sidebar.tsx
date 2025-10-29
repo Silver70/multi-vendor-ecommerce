@@ -60,12 +60,6 @@ const data = {
       title: "Home",
       url: "/dashboard/overview",
       icon: Home,
-      items: [
-        {
-          title: "Overview",
-          url: "/dashboard/overview",
-        },
-      ],
     },
     {
       title: "Inventory",
@@ -81,8 +75,8 @@ const data = {
           url: "/dashboard/inventory/category",
         },
         {
-          title: "Brands",
-          url: "/dashboard/inventory/brands",
+          title: "Vendors",
+          url: "/dashboard/inventory/vendors",
         },
       ],
     },
@@ -90,46 +84,11 @@ const data = {
       title: "Orders",
       url: "/dashboard/orders",
       icon: BookOpen,
-      items: [
-        {
-          title: "Orders",
-          url: "/dashboard/orders",
-        },
-        {
-          title: "Deliveries",
-          url: "/dashboard/orders/deliveries",
-        },
-        {
-          title: "Returns",
-          url: "/dashboard/orders/returns",
-        },
-        {
-          title: "Refunds",
-          url: "/dashboard/orders/refunds",
-        },
-      ],
     },
     {
       title: "Analytics",
       url: "/dashboard/analytics",
       icon: Settings2,
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
     },
   ],
 };
@@ -154,7 +113,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

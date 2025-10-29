@@ -40,11 +40,30 @@ export function NavMain({
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
-          // Check if any sub-item is active or if the main item is active
+          const hasSubItems = item.items && item.items.length > 0;
           const isParentActive =
             item.items?.some((subItem) => currentPath === subItem.url) ||
             currentPath === item.url;
 
+          // If item has no sub-items, render as a simple link
+          if (!hasSubItems) {
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  isActive={currentPath === item.url}
+                >
+                  <Link to={item.url} preload="intent">
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          }
+
+          // If item has sub-items, render as collapsible dropdown
           return (
             <Collapsible
               key={item.title}
