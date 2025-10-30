@@ -1,5 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:5176";
@@ -91,7 +95,8 @@ export interface UpdateOrderDto {
 // Get all orders with pagination
 export const getOrders = createServerFn({ method: "GET" }).handler(async () => {
   const response = await axios.get<PagedResult<Order>>(
-    `${API_BASE_URL}/api/Orders`
+    `${API_BASE_URL}/api/Orders`,
+    { params: { pageSize: 100 } }
   );
   return response.data;
 });

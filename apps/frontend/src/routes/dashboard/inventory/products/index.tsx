@@ -51,6 +51,7 @@ function RouteComponent() {
     productName: string;
   } | null>(null);
 
+  //@ts-ignore
   const { data: productsResponse, isLoading: isQueryLoading } = useQuery(
     productQueries.getAll()
   );

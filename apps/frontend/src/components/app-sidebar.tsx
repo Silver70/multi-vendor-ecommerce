@@ -86,6 +86,11 @@ const data = {
       icon: BookOpen,
     },
     {
+      title: "Customers",
+      url: "/dashboard/customers",
+      icon: Bot,
+    },
+    {
       title: "Analytics",
       url: "/dashboard/analytics",
       icon: Settings2,

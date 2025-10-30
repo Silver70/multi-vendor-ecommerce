@@ -53,6 +53,13 @@ namespace EcommerceApi.Services
         {
             // NO duplicate check anymore - allows admin to create multiple customers
 
+            // Ensure DateOfBirth is UTC if provided
+            DateTime? dateOfBirth = null;
+            if (createDto.DateOfBirth.HasValue)
+            {
+                dateOfBirth = DateTime.SpecifyKind(createDto.DateOfBirth.Value, DateTimeKind.Utc);
+            }
+
             var customer = new Customer
             {
                 Id = Guid.NewGuid(),
@@ -60,7 +67,7 @@ namespace EcommerceApi.Services
                 FullName = createDto.FullName,
                 Email = createDto.Email,
                 Phone = createDto.Phone,
-                DateOfBirth = createDto.DateOfBirth,
+                DateOfBirth = dateOfBirth,
                 IsFromWebsite = createdByUserId == null,  // If no admin, from website
                 CreatedAt = DateTime.UtcNow
             };
@@ -111,7 +118,16 @@ namespace EcommerceApi.Services
             customer.FullName = updateDto.FullName;
             customer.Email = updateDto.Email;
             customer.Phone = updateDto.Phone;
-            customer.DateOfBirth = updateDto.DateOfBirth;
+
+            // Ensure DateOfBirth is UTC if provided
+            if (updateDto.DateOfBirth.HasValue)
+            {
+                customer.DateOfBirth = DateTime.SpecifyKind(updateDto.DateOfBirth.Value, DateTimeKind.Utc);
+            }
+            else
+            {
+                customer.DateOfBirth = null;
+            }
 
             _context.Customers.Update(customer);
             await _context.SaveChangesAsync();

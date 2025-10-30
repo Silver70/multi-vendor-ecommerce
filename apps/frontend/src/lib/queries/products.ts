@@ -1,5 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Product, ProductDetails } from "~/types/product";
 import axios from "axios";
 
@@ -189,9 +193,7 @@ export const createCompositeProduct = createServerFn({ method: "POST" })
 
 // Update a composite product (with attributes and variants)
 export const updateCompositeProduct = createServerFn({ method: "POST" })
-  .inputValidator(
-    (d: { id: string; data: CreateCompositeProductDto }) => d
-  )
+  .inputValidator((d: { id: string; data: CreateCompositeProductDto }) => d)
   .handler(async ({ data: payload }) => {
     const response = await axios.put<CompositeProductResponse>(
       `${API_BASE_URL}/api/Products/${payload.id}/composite`,
@@ -300,7 +302,10 @@ export const useUpdateProduct = (productId?: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payload: { id: string; data: CreateCompositeProductDto }) => {
+    mutationFn: async (payload: {
+      id: string;
+      data: CreateCompositeProductDto;
+    }) => {
       return await updateCompositeProduct({ data: payload });
     },
     onSuccess: () => {
@@ -333,6 +338,8 @@ export const useDeleteProduct = () => {
 
 // Query options exports (original names)
 export const getProductsQueryOptions = productQueries.getAll();
-export const getProductQueryOptions = (id: string) => productQueries.getById(id);
-export const getProductBySlugQueryOptions = (slug: string) => productQueries.getBySlug(slug);
+export const getProductQueryOptions = (id: string) =>
+  productQueries.getById(id);
+export const getProductBySlugQueryOptions = (slug: string) =>
+  productQueries.getBySlug(slug);
 export const getGlobalAttributesQueryOptions = attributeQueries.getAll();
