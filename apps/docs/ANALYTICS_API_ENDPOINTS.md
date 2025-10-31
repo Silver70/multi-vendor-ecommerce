@@ -1,10 +1,13 @@
 # Analytics API Endpoints Documentation
 
 ## Overview
+
 The Analytics API provides comprehensive business intelligence endpoints for the e-commerce platform. All endpoints are under `/api/analytics/` and return JSON responses with various metrics and KPIs.
 
 ## Base URL
+
 ```
+
 /api/analytics/
 ```
 
@@ -13,13 +16,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ## 1. Revenue Analytics
 
 ### Get Revenue Summary
+
 **Endpoint:** `GET /api/analytics/revenue/summary`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional) - Start date for analysis
 - `toDate` (DateTime?, optional) - End date for analysis
 
 **Response:**
+
 ```json
 {
   "totalRevenue": 50000,
@@ -34,13 +40,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Revenue by Status
+
 **Endpoint:** `GET /api/analytics/revenue/by-status`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 [
   {
@@ -63,13 +72,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Revenue by Vendor
+
 **Endpoint:** `GET /api/analytics/revenue/by-vendor`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 [
   {
@@ -92,13 +104,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Revenue by Category
+
 **Endpoint:** `GET /api/analytics/revenue/by-category`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 [
   {
@@ -121,13 +136,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Revenue by Payment Method
+
 **Endpoint:** `GET /api/analytics/revenue/by-payment-method`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 [
   {
@@ -150,14 +168,17 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Revenue Trends
+
 **Endpoint:** `GET /api/analytics/revenue/trends`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 - `period` (string, optional, default: "daily") - Options: "daily", "weekly", "monthly"
 
 **Response:**
+
 ```json
 [
   {
@@ -180,13 +201,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ## 2. Order Analytics
 
 ### Get Order Summary
+
 **Endpoint:** `GET /api/analytics/orders/summary`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 {
   "totalOrders": 100,
@@ -203,13 +227,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Order Status Breakdown
+
 **Endpoint:** `GET /api/analytics/orders/status-breakdown`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 [
   {
@@ -230,13 +257,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Order Conversion Funnel
+
 **Endpoint:** `GET /api/analytics/orders/conversion-funnel`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 [
   {
@@ -269,11 +299,13 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Order Cancellation Metrics
+
 **Endpoint:** `GET /api/analytics/orders/cancellation-metrics`
 
 **Query Parameters:** None
 
 **Response:**
+
 ```json
 {
   "totalCancellations": 2,
@@ -288,13 +320,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Geographic Order Metrics
+
 **Endpoint:** `GET /api/analytics/orders/geographic`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 [
   {
@@ -317,14 +352,17 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Order Trends
+
 **Endpoint:** `GET /api/analytics/orders/trends`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 - `period` (string, optional, default: "daily") - Options: "daily", "weekly", "monthly"
 
 **Response:**
+
 ```json
 [
   {
@@ -345,11 +383,13 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ## 3. Customer Analytics
 
 ### Get Customer Summary
+
 **Endpoint:** `GET /api/analytics/customers/summary`
 
 **Query Parameters:** None
 
 **Response:**
+
 ```json
 {
   "totalCustomers": 500,
@@ -366,14 +406,17 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Customer Acquisition
+
 **Endpoint:** `GET /api/analytics/customers/acquisition`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 - `period` (string, optional, default: "daily") - Options: "daily", "weekly", "monthly"
 
 **Response:**
+
 ```json
 [
   {
@@ -394,11 +437,13 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Repeat Customer Metrics
+
 **Endpoint:** `GET /api/analytics/customers/repeat`
 
 **Query Parameters:** None
 
 **Response:**
+
 ```json
 {
   "totalCustomers": 500,
@@ -412,13 +457,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Customer Lifetime Value
+
 **Endpoint:** `GET /api/analytics/customers/lifetime-value`
 
 **Query Parameters:**
+
 - `pageNumber` (int, optional, default: 1)
 - `pageSize` (int, optional, default: 50)
 
 **Response:**
+
 ```json
 [
   {
@@ -437,11 +485,13 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Geographic Customer Metrics
+
 **Endpoint:** `GET /api/analytics/customers/geographic`
 
 **Query Parameters:** None
 
 **Response:**
+
 ```json
 [
   {
@@ -457,11 +507,13 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Customer Source Metrics
+
 **Endpoint:** `GET /api/analytics/customers/source`
 
 **Query Parameters:** None
 
 **Response:**
+
 ```json
 [
   {
@@ -486,15 +538,18 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ## 4. Product & Inventory Analytics
 
 ### Get Product Performance
+
 **Endpoint:** `GET /api/analytics/products/performance`
 
 **Query Parameters:**
+
 - `pageNumber` (int, optional, default: 1)
 - `pageSize` (int, optional, default: 50)
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 [
   {
@@ -514,13 +569,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Category Sales Metrics
+
 **Endpoint:** `GET /api/analytics/categories/sales`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 [
   {
@@ -537,13 +595,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Inventory Levels
+
 **Endpoint:** `GET /api/analytics/inventory/levels`
 
 **Query Parameters:**
+
 - `pageNumber` (int, optional, default: 1)
 - `pageSize` (int, optional, default: 50)
 
 **Response:**
+
 ```json
 [
   {
@@ -563,12 +624,15 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Low Stock Alerts
+
 **Endpoint:** `GET /api/analytics/inventory/low-stock`
 
 **Query Parameters:**
+
 - `threshold` (int, optional, default: 10)
 
 **Response:**
+
 ```json
 [
   {
@@ -585,13 +649,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Vendor Performance
+
 **Endpoint:** `GET /api/analytics/vendors/performance`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 [
   {
@@ -611,13 +678,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ## 5. Payment Analytics
 
 ### Get Payment Summary
+
 **Endpoint:** `GET /api/analytics/payments/summary`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 {
   "totalPayments": 100,
@@ -634,13 +704,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Payments by Method
+
 **Endpoint:** `GET /api/analytics/payments/by-method`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 
 **Response:**
+
 ```json
 [
   {
@@ -663,11 +736,13 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Refund Metrics
+
 **Endpoint:** `GET /api/analytics/payments/refund-metrics`
 
 **Query Parameters:** None
 
 **Response:**
+
 ```json
 {
   "totalRefunds": 2,
@@ -683,14 +758,17 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Payment Trends
+
 **Endpoint:** `GET /api/analytics/payments/trends`
 
 **Query Parameters:**
+
 - `fromDate` (DateTime?, optional)
 - `toDate` (DateTime?, optional)
 - `period` (string, optional, default: "daily") - Options: "daily", "weekly", "monthly"
 
 **Response:**
+
 ```json
 [
   {
@@ -708,11 +786,13 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ## 6. Review Analytics
 
 ### Get Review Summary
+
 **Endpoint:** `GET /api/analytics/reviews/summary`
 
 **Query Parameters:** None
 
 **Response:**
+
 ```json
 {
   "totalReviews": 500,
@@ -726,11 +806,13 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Rating Distribution
+
 **Endpoint:** `GET /api/analytics/reviews/rating-distribution`
 
 **Query Parameters:** None
 
 **Response:**
+
 ```json
 [
   {
@@ -764,13 +846,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Product Ratings
+
 **Endpoint:** `GET /api/analytics/reviews/product-ratings`
 
 **Query Parameters:**
+
 - `pageNumber` (int, optional, default: 1)
 - `pageSize` (int, optional, default: 50)
 
 **Response:**
+
 ```json
 [
   {
@@ -790,13 +875,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Top Rated Products
+
 **Endpoint:** `GET /api/analytics/reviews/top-rated`
 
 **Query Parameters:**
+
 - `limit` (int, optional, default: 10)
 - `minReviews` (int, optional, default: 1)
 
 **Response:**
+
 ```json
 [
   {
@@ -812,13 +900,16 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ---
 
 ### Get Low Rated Products
+
 **Endpoint:** `GET /api/analytics/reviews/low-rated`
 
 **Query Parameters:**
+
 - `limit` (int, optional, default: 10)
 - `minReviews` (int, optional, default: 1)
 
 **Response:**
+
 ```json
 [
   {
@@ -855,21 +946,25 @@ The Analytics API provides comprehensive business intelligence endpoints for the
 ## Frontend Usage Examples
 
 ### Get Daily Revenue Trends
+
 ```
 GET /api/analytics/revenue/trends?period=daily&fromDate=2024-10-01&toDate=2024-10-31
 ```
 
 ### Get Top 20 Products
+
 ```
 GET /api/analytics/products/performance?pageSize=20
 ```
 
 ### Get Customers by Location
+
 ```
 GET /api/analytics/customers/geographic
 ```
 
 ### Monitor Inventory Health
+
 ```
 GET /api/analytics/inventory/low-stock?threshold=15
 ```

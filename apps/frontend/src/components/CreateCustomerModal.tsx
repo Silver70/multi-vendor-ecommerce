@@ -38,16 +38,15 @@ export function CreateCustomerModal({
   const queryClient = useQueryClient();
   const createCustomerMutation = useCreateCustomer();
 
-  const { register, handleSubmit, reset, formState } = useForm<CustomerFormData>(
-    {
+  const { register, handleSubmit, reset, formState } =
+    useForm<CustomerFormData>({
       defaultValues: {
         fullName: "",
         email: "",
         phone: "",
         dateOfBirth: "",
       },
-    }
-  );
+    });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -141,11 +140,7 @@ export function CreateCustomerModal({
           {/* Date of Birth */}
           <div className="space-y-2">
             <Label htmlFor="dateOfBirth">Date of Birth (Optional)</Label>
-            <Input
-              id="dateOfBirth"
-              type="date"
-              {...register("dateOfBirth")}
-            />
+            <Input id="dateOfBirth" type="date" {...register("dateOfBirth")} />
           </div>
 
           {/* Error Message */}

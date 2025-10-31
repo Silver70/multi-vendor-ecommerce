@@ -37,9 +37,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var query = _context.Orders.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -125,9 +122,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var query = _context.Orders.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -179,9 +173,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var query = _context.Orders.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -224,9 +215,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var query = _context.Payments.Where(p => p.Status == "completed").AsQueryable();
 
                 if (fromDate.HasValue)
@@ -266,9 +254,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var query = _context.Orders.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -345,9 +330,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var query = _context.Orders.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -385,9 +367,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var query = _context.Orders.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -428,9 +407,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var query = _context.Orders.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -510,9 +486,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var query = _context.Orders.Include(o => o.Address).AsQueryable();
 
                 if (fromDate.HasValue)
@@ -552,9 +525,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var query = _context.Orders.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -666,9 +636,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var query = _context.Customers.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -908,9 +875,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var ordersQuery = _context.Orders.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -919,32 +883,26 @@ namespace EcommerceApi.Controllers
                 if (toDate.HasValue)
                     ordersQuery = ordersQuery.Where(o => o.CreatedAt <= toDate.Value);
 
-                var orders = await ordersQuery.Include(o => o.Items).ToListAsync();
+                var orders = await ordersQuery.ToListAsync();
 
-                var products = await _context.Products
+                var productPerformance = await _context.Products
                     .Include(p => p.Reviews)
-                    .Include(p => p.Variants)
-                    .Include(p => p.Category)
-                    .Include(p => p.Vendor)
-                    .ToListAsync();
-
-                var productPerformance = products
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
                     .Select(p => new ProductPerformanceDto
                     {
                         ProductId = p.Id,
                         ProductName = p.Name,
                         Category = p.Category != null ? p.Category.Name : "Unknown",
                         Vendor = p.Vendor != null ? p.Vendor.Name : "Unknown",
-                        UnitsSold = p.Variants.SelectMany(v => orders.SelectMany(o => o.Items).Where(oi => oi.VariantId == v.Id)).Count(),
-                        TotalRevenue = p.Variants.SelectMany(v => orders.SelectMany(o => o.Items).Where(oi => oi.VariantId == v.Id).Select(oi => oi.Price * (decimal)oi.Quantity)).Sum(),
+                        UnitsSold = p.Variants.SelectMany(v => orders.SelectMany(o => o.Items.Where(oi => oi.VariantId == v.Id))).Count(),
+                        TotalRevenue = p.Variants.SelectMany(v => orders.SelectMany(o => o.Items.Where(oi => oi.VariantId == v.Id).Select(oi => oi.Price * oi.Quantity))).Sum(),
                         AveragePrice = p.Variants.Count > 0 ? (decimal)p.Variants.Average(v => (double)v.Price) : 0,
                         AverageRating = p.Reviews.Count > 0 ? (decimal)p.Reviews.Average(r => r.Rating) : 0,
                         ReviewCount = p.Reviews.Count
                     })
                     .OrderByDescending(x => x.TotalRevenue)
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
+                    .ToListAsync();
 
                 return Ok(productPerformance);
             }
@@ -963,9 +921,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var ordersQuery = _context.Orders.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -974,22 +929,21 @@ namespace EcommerceApi.Controllers
                 if (toDate.HasValue)
                     ordersQuery = ordersQuery.Where(o => o.CreatedAt <= toDate.Value);
 
-                var orders = await ordersQuery.Include(o => o.Items).ToListAsync();
+                var orders = await ordersQuery.ToListAsync();
                 var totalRevenue = orders.Sum(o => o.TotalAmount);
 
-                var categories = await _context.Categories
+                var metrics = await _context.Categories
                     .Include(c => c.Products)
                     .ThenInclude(p => p.Variants)
+                    .Select(c => new
+                    {
+                        CategoryId = c.Id,
+                        CategoryName = c.Name,
+                        ProductCount = c.Products.Count,
+                        Items = c.Products.SelectMany(p => p.Variants)
+                            .SelectMany(v => orders.SelectMany(o => o.Items.Where(oi => oi.VariantId == v.Id)))
+                    })
                     .ToListAsync();
-
-                var metrics = categories.Select(c => new
-                {
-                    CategoryId = c.Id,
-                    CategoryName = c.Name,
-                    ProductCount = c.Products.Count,
-                    Items = c.Products.SelectMany(p => p.Variants)
-                        .SelectMany(v => orders.SelectMany(o => o.Items).Where(oi => oi.VariantId == v.Id))
-                }).ToList();
 
                 var categorySales = metrics.Select(m => new CategorySalesMetricsDto
                 {
@@ -997,8 +951,8 @@ namespace EcommerceApi.Controllers
                     CategoryName = m.CategoryName,
                     ProductCount = m.ProductCount,
                     UnitsSold = m.Items.Count(),
-                    TotalRevenue = m.Items.Sum(i => i.Price * (decimal)i.Quantity),
-                    Percentage = totalRevenue > 0 ? (m.Items.Sum(i => i.Price * (decimal)i.Quantity) * 100m) / totalRevenue : 0
+                    TotalRevenue = m.Items.Sum(i => i.Price * i.Quantity),
+                    Percentage = totalRevenue > 0 ? (m.Items.Sum(i => i.Price * i.Quantity) * 100m) / totalRevenue : 0
                 })
                 .OrderByDescending(x => x.TotalRevenue)
                 .ToList();
@@ -1021,21 +975,20 @@ namespace EcommerceApi.Controllers
             try
             {
                 var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
-                var orders = await _context.Orders.Where(o => o.CreatedAt >= thirtyDaysAgo).Include(o => o.Items).ToListAsync();
+                var orders = await _context.Orders.Where(o => o.CreatedAt >= thirtyDaysAgo).ToListAsync();
 
-                var variants = await _context.ProductVariants
+                var metrics = await _context.ProductVariants
                     .Include(v => v.Product)
                     .Include(v => v.InventoryLogs)
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
+                    .Select(v => new
+                    {
+                        Variant = v,
+                        RecentSales = orders.SelectMany(o => o.Items.Where(oi => oi.VariantId == v.Id)).Count(),
+                        SalesValue = orders.SelectMany(o => o.Items.Where(oi => oi.VariantId == v.Id)).Sum(oi => oi.Price * oi.Quantity)
+                    })
                     .ToListAsync();
-
-                var metrics = variants.Select(v => new
-                {
-                    Variant = v,
-                    RecentSales = orders.SelectMany(o => o.Items).Count(oi => oi.VariantId == v.Id),
-                    SalesValue = orders.SelectMany(o => o.Items).Where(oi => oi.VariantId == v.Id).Sum(oi => oi.Price * (decimal)oi.Quantity)
-                }).ToList();
 
                 var inventoryMetrics = metrics.Select(m => new InventoryMetricsDto
                 {
@@ -1069,18 +1022,17 @@ namespace EcommerceApi.Controllers
             try
             {
                 var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
-                var orders = await _context.Orders.Where(o => o.CreatedAt >= thirtyDaysAgo).Include(o => o.Items).ToListAsync();
+                var orders = await _context.Orders.Where(o => o.CreatedAt >= thirtyDaysAgo).ToListAsync();
 
-                var variants = await _context.ProductVariants
+                var alerts = await _context.ProductVariants
                     .Include(v => v.Product)
                     .Where(v => v.Stock <= threshold)
+                    .Select(v => new
+                    {
+                        Variant = v,
+                        RecentSalesCount = orders.SelectMany(o => o.Items.Where(oi => oi.VariantId == v.Id)).Count()
+                    })
                     .ToListAsync();
-
-                var alerts = variants.Select(v => new
-                {
-                    Variant = v,
-                    RecentSalesCount = orders.SelectMany(o => o.Items).Count(oi => oi.VariantId == v.Id)
-                }).ToList();
 
                 var alertList = alerts.Select(a => new LowStockAlertDto
                 {
@@ -1111,9 +1063,6 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                // Convert to UTC to avoid PostgreSQL timestamp issues
-                fromDate = ToUtc(fromDate);
-                toDate = ToUtc(toDate);
                 var ordersQuery = _context.Orders.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -1122,34 +1071,33 @@ namespace EcommerceApi.Controllers
                 if (toDate.HasValue)
                     ordersQuery = ordersQuery.Where(o => o.CreatedAt <= toDate.Value);
 
-                var orders = await ordersQuery.Include(o => o.Items).ToListAsync();
+                var orders = await ordersQuery.ToListAsync();
                 var totalRevenue = orders.Sum(o => o.TotalAmount);
 
-                var vendors = await _context.Vendors
+                var vendorMetrics = await _context.Vendors
                     .Include(v => v.Products)
                     .ThenInclude(p => p.Variants)
                     .ThenInclude(v => v.Product)
                     .ThenInclude(p => p.Reviews)
+                    .Select(v => new
+                    {
+                        Vendor = v,
+                        Items = v.Products.SelectMany(p => p.Variants)
+                            .SelectMany(var => orders.SelectMany(o => o.Items.Where(oi => oi.VariantId == var.Id)))
+                    })
                     .ToListAsync();
-
-                var vendorMetrics = vendors.Select(v => new
-                {
-                    Vendor = v,
-                    Items = v.Products.SelectMany(p => p.Variants)
-                        .SelectMany(var => orders.SelectMany(o => o.Items).Where(oi => oi.VariantId == var.Id))
-                }).ToList();
 
                 var performance = vendorMetrics.Select(m => new VendorPerformanceDto
                 {
                     VendorId = m.Vendor.Id,
                     VendorName = m.Vendor.Name,
                     ProductCount = m.Vendor.Products.Count,
-                    TotalRevenue = m.Items.Sum(i => i.Price * (decimal)i.Quantity),
+                    TotalRevenue = m.Items.Sum(i => i.Price * i.Quantity),
                     TotalOrders = m.Items.Select(i => i.OrderId).Distinct().Count(),
                     AverageRating = m.Vendor.Products.SelectMany(p => p.Reviews).Count() > 0
                         ? (decimal)m.Vendor.Products.SelectMany(p => p.Reviews).Average(r => r.Rating)
                         : 0,
-                    RevenuePercentage = totalRevenue > 0 ? (m.Items.Sum(i => i.Price * (decimal)i.Quantity) * 100m) / totalRevenue : 0
+                    RevenuePercentage = totalRevenue > 0 ? (m.Items.Sum(i => i.Price * i.Quantity) * 100m) / totalRevenue : 0
                 })
                 .OrderByDescending(x => x.TotalRevenue)
                 .ToList();
