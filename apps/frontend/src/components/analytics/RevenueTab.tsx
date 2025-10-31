@@ -177,9 +177,9 @@ export function RevenueTab({ dateRange }: RevenueTabProps) {
           <CardTitle>Revenue Trend</CardTitle>
           <CardDescription>Daily revenue over selected period</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="w-full">
           {trendsLoading ? (
-            <div className="h-[300px] bg-muted animate-pulse rounded" />
+            <div className="h-[300px] w-full bg-muted animate-pulse rounded" />
           ) : (
             <ChartContainer
               config={{
@@ -188,7 +188,7 @@ export function RevenueTab({ dateRange }: RevenueTabProps) {
                   color: "hsl(var(--chart-1))",
                 },
               }}
-              className="h-[300px]"
+              className="h-[300px] w-full"
             >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
@@ -231,9 +231,9 @@ export function RevenueTab({ dateRange }: RevenueTabProps) {
             <CardTitle>Revenue by Status</CardTitle>
             <CardDescription>Payment status breakdown</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="w-full">
             {statusLoading ? (
-              <div className="h-[300px] bg-muted animate-pulse rounded" />
+              <div className="h-[300px] w-full bg-muted animate-pulse rounded" />
             ) : (
               <ChartContainer
                 config={{
@@ -242,7 +242,7 @@ export function RevenueTab({ dateRange }: RevenueTabProps) {
                     color: "hsl(var(--chart-1))",
                   },
                 }}
-                className="h-[300px]"
+                className="h-[300px] w-full"
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -276,9 +276,9 @@ export function RevenueTab({ dateRange }: RevenueTabProps) {
             <CardTitle>Revenue by Category</CardTitle>
             <CardDescription>Top performing categories</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="w-full">
             {categoryLoading ? (
-              <div className="h-[300px] bg-muted animate-pulse rounded" />
+              <div className="h-[300px] w-full bg-muted animate-pulse rounded" />
             ) : (
               <ChartContainer
                 config={{
@@ -287,7 +287,7 @@ export function RevenueTab({ dateRange }: RevenueTabProps) {
                     color: "hsl(var(--chart-2))",
                   },
                 }}
-                className="h-[300px]"
+                className="h-[300px] w-full"
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>

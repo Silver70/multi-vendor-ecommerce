@@ -140,7 +140,7 @@ export function PaymentsTab({ dateRange }: PaymentsTabProps) {
           <CardTitle>Payment Trends</CardTitle>
           <CardDescription>Completed vs failed payments over time</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="w-full">
           {trendsLoading ? (
             <div className="h-[300px] bg-muted animate-pulse rounded" />
           ) : (
@@ -155,7 +155,7 @@ export function PaymentsTab({ dateRange }: PaymentsTabProps) {
                   color: "hsl(var(--chart-3))",
                 },
               }}
-              className="h-[300px]"
+              className="h-[300px] w-full"
             >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>

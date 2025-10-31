@@ -241,7 +241,7 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
           </CardHeader>
           <CardContent>
             {trendsLoading ? (
-              <div className="h-[300px] bg-muted animate-pulse rounded" />
+              <div className="h-[300px] w-full bg-muted animate-pulse rounded" />
             ) : (
               <ChartContainer
                 config={{
@@ -250,7 +250,7 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
                     color: "hsl(var(--chart-1))",
                   },
                 }}
-                className="h-[300px]"
+                className="h-[300px] w-full"
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData}>
@@ -293,7 +293,7 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
           </CardHeader>
           <CardContent>
             {productsLoading ? (
-              <div className="h-[300px] bg-muted animate-pulse rounded" />
+              <div className="h-[300px] w-full bg-muted animate-pulse rounded" />
             ) : (
               <ChartContainer
                 config={{
@@ -302,7 +302,7 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
                     color: "hsl(var(--chart-2))",
                   },
                 }}
-                className="h-[300px]"
+                className="h-[300px] w-full"
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topProductsData}>
