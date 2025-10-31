@@ -193,7 +193,7 @@ function RouteComponent() {
 
       {/* Summary */}
       {filteredVendors.length > 0 && (
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+        <div className="mt-8 p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
           Showing {filteredVendors.length} of {vendors.length} vendors
         </div>
       )}

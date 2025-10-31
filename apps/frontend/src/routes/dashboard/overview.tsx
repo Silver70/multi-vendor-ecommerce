@@ -145,7 +145,7 @@ function RouteComponent() {
                   config={{
                     revenue: {
                       label: "Revenue",
-                      color: "hsl(var(--chart-1))",
+                      color: "var(--chart-1)",
                     },
                   }}
                   className="h-[300px]"
@@ -155,26 +155,26 @@ function RouteComponent() {
                       <CartesianGrid
                         strokeDasharray="3 3"
                         className="stroke-muted"
-                        stroke="hsl(var(--border))"
+                        stroke="var(--border)"
                       />
                       <XAxis
                         dataKey="month"
                         className="text-xs"
-                        tick={{ fill: "hsl(var(--foreground))" }}
-                        stroke="hsl(var(--border))"
+                        tick={{ fill: "var(--foreground)" }}
+                        stroke="var(--border)"
                       />
                       <YAxis
                         className="text-xs"
-                        tick={{ fill: "hsl(var(--foreground))" }}
-                        stroke="hsl(var(--border))"
+                        tick={{ fill: "var(--foreground)" }}
+                        stroke="var(--border)"
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Line
                         type="monotone"
                         dataKey="revenue"
-                        stroke="hsl(var(--chart-1))"
+                        stroke="var(--chart-1)"
                         strokeWidth={2}
-                        dot={{ fill: "hsl(var(--chart-1))" }}
+                        dot={{ fill: "var(--chart-1)" }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -195,7 +195,7 @@ function RouteComponent() {
                   config={{
                     sales: {
                       label: "Sales",
-                      color: "hsl(var(--chart-2))",
+                      color: "var(--chart-2)",
                     },
                   }}
                   className="h-[300px]"
@@ -205,7 +205,7 @@ function RouteComponent() {
                       <CartesianGrid
                         strokeDasharray="3 3"
                         className="stroke-muted"
-                        stroke="hsl(var(--border))"
+                        stroke="var(--border)"
                       />
                       <XAxis
                         dataKey="category"
@@ -213,18 +213,18 @@ function RouteComponent() {
                         angle={-45}
                         textAnchor="end"
                         height={80}
-                        tick={{ fill: "hsl(var(--foreground))" }}
-                        stroke="hsl(var(--border))"
+                        tick={{ fill: "var(--foreground)" }}
+                        stroke="var(--border)"
                       />
                       <YAxis
                         className="text-xs"
-                        tick={{ fill: "hsl(var(--foreground))" }}
-                        stroke="hsl(var(--border))"
+                        tick={{ fill: "var(--foreground)" }}
+                        stroke="var(--border)"
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Bar
                         dataKey="sales"
-                        fill="hsl(var(--chart-2))"
+                        fill="var(--chart-2)"
                         radius={[4, 4, 0, 0]}
                       />
                     </BarChart>

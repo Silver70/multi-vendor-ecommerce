@@ -153,7 +153,7 @@ export function ProductVariantSidebar({
                     onClick={() => handleSelectVariant(variant)}
                     className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                       isRecentlyAdded
-                        ? "border-green-500 bg-green-50 hover:bg-green-100"
+                        ? "border-accent bg-accent hover:bg-accent/80"
                         : "border-transparent bg-muted hover:bg-muted/80"
                     } ${variant.stock === 0 ? "opacity-60" : ""}`}
                     disabled={variant.stock === 0}
@@ -169,7 +169,7 @@ export function ProductVariantSidebar({
                           </div>
                         </div>
                         {isAlreadyInOrder && (
-                          <span className="text-xs font-medium bg-green-500 text-white px-2 py-1 rounded whitespace-nowrap">
+                          <span className="text-xs font-medium bg-accent-foreground text-background px-2 py-1 rounded whitespace-nowrap">
                             In Order
                           </span>
                         )}
@@ -182,8 +182,8 @@ export function ProductVariantSidebar({
                         <span
                           className={`text-xs font-medium ${
                             variant.stock > 0
-                              ? "text-green-600"
-                              : "text-red-600"
+                              ? "text-accent-foreground"
+                              : "text-destructive"
                           }`}
                         >
                           {variant.stock > 0

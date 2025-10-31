@@ -226,7 +226,7 @@ function RouteComponent() {
 
       {/* Summary */}
       {filteredParents.length > 0 && (
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+        <div className="mt-8 p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
           Showing {filteredParents.length} of {parentCategories.length}{" "}
           categories | Total Products:{" "}
           {categories.reduce((sum, c) => sum + c.productCount, 0)}

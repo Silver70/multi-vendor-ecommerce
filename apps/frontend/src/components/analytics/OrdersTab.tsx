@@ -165,11 +165,11 @@ export function OrdersTab({ dateRange }: OrdersTabProps) {
               config={{
                 orders: {
                   label: "Orders",
-                  color: "hsl(var(--chart-1))",
+                  color: "var(--chart-1)",
                 },
                 amount: {
                   label: "Amount",
-                  color: "hsl(var(--chart-2))",
+                  color: "var(--chart-2)",
                 },
               }}
               className="h-[300px] w-full"
@@ -179,26 +179,26 @@ export function OrdersTab({ dateRange }: OrdersTabProps) {
                   <CartesianGrid
                     strokeDasharray="3 3"
                     className="stroke-muted"
-                    stroke="hsl(var(--border))"
+                    stroke="var(--border)"
                   />
                   <XAxis
                     dataKey="date"
                     className="text-xs"
-                    tick={{ fill: "hsl(var(--foreground))" }}
-                    stroke="hsl(var(--border))"
+                    tick={{ fill: "var(--foreground)" }}
+                    stroke="var(--border)"
                   />
                   <YAxis
                     className="text-xs"
-                    tick={{ fill: "hsl(var(--foreground))" }}
-                    stroke="hsl(var(--border))"
+                    tick={{ fill: "var(--foreground)" }}
+                    stroke="var(--border)"
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Line
                     type="monotone"
                     dataKey="orders"
-                    stroke="hsl(var(--chart-1))"
+                    stroke="var(--chart-1)"
                     strokeWidth={2}
-                    dot={{ fill: "hsl(var(--chart-1))" }}
+                    dot={{ fill: "var(--chart-1)" }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -274,10 +274,10 @@ export function OrdersTab({ dateRange }: OrdersTabProps) {
                         style={{
                           width: `${item.percentage}%`,
                           backgroundColor: [
-                            "hsl(var(--chart-1))",
-                            "hsl(var(--chart-2))",
-                            "hsl(var(--chart-3))",
-                            "hsl(var(--chart-4))",
+                            "var(--chart-1)",
+                            "var(--chart-2)",
+                            "var(--chart-3)",
+                            "var(--chart-4)",
                           ][index],
                         }}
                       />

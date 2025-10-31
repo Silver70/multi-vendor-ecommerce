@@ -148,11 +148,11 @@ export function PaymentsTab({ dateRange }: PaymentsTabProps) {
               config={{
                 completed: {
                   label: "Completed",
-                  color: "hsl(var(--chart-1))",
+                  color: "var(--chart-1)",
                 },
                 failed: {
                   label: "Failed",
-                  color: "hsl(var(--chart-3))",
+                  color: "var(--chart-3)",
                 },
               }}
               className="h-[300px] w-full"
@@ -162,33 +162,33 @@ export function PaymentsTab({ dateRange }: PaymentsTabProps) {
                   <CartesianGrid
                     strokeDasharray="3 3"
                     className="stroke-muted"
-                    stroke="hsl(var(--border))"
+                    stroke="var(--border)"
                   />
                   <XAxis
                     dataKey="date"
                     className="text-xs"
-                    tick={{ fill: "hsl(var(--foreground))" }}
-                    stroke="hsl(var(--border))"
+                    tick={{ fill: "var(--foreground)" }}
+                    stroke="var(--border)"
                   />
                   <YAxis
                     className="text-xs"
-                    tick={{ fill: "hsl(var(--foreground))" }}
-                    stroke="hsl(var(--border))"
+                    tick={{ fill: "var(--foreground)" }}
+                    stroke="var(--border)"
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Line
                     type="monotone"
                     dataKey="completed"
-                    stroke="hsl(var(--chart-1))"
+                    stroke="var(--chart-1)"
                     strokeWidth={2}
-                    dot={{ fill: "hsl(var(--chart-1))" }}
+                    dot={{ fill: "var(--chart-1)" }}
                   />
                   <Line
                     type="monotone"
                     dataKey="failed"
-                    stroke="hsl(var(--chart-3))"
+                    stroke="var(--chart-3)"
                     strokeWidth={2}
-                    dot={{ fill: "hsl(var(--chart-3))" }}
+                    dot={{ fill: "var(--chart-3)" }}
                   />
                 </LineChart>
               </ResponsiveContainer>

@@ -419,11 +419,11 @@ function RouteComponent() {
   if (isError) {
     return (
       <div className="container mx-auto py-6 max-w-5xl">
-        <div className="rounded-md bg-red-50 border border-red-200 p-4">
-          <h2 className="text-lg font-semibold text-red-900 mb-2">
+        <div className="rounded-md bg-destructive/10 border border-destructive p-4">
+          <h2 className="text-lg font-semibold text-destructive mb-2">
             Error Loading Product
           </h2>
-          <p className="text-sm text-red-800">
+          <p className="text-sm text-destructive/90">
             {error instanceof Error ? error.message : "Failed to load product"}
           </p>
           <Button
@@ -556,8 +556,8 @@ function RouteComponent() {
           <CardContent className="space-y-4">
             {/* Available Global Attributes */}
             {availableGlobalAttributes.length > 0 && (
-              <div className="space-y-3 border rounded-lg p-4 bg-blue-50">
-                <h4 className="font-semibold text-sm text-blue-900">
+              <div className="space-y-3 border rounded-lg p-4 bg-secondary/10">
+                <h4 className="font-semibold text-sm text-secondary-foreground">
                   Available Global Attributes
                 </h4>
                 <div className="flex flex-wrap gap-2">
@@ -570,7 +570,7 @@ function RouteComponent() {
                         variant="outline"
                         size="sm"
                         onClick={() => addGlobalAttribute(globalAttr)}
-                        className="bg-white hover:bg-blue-100"
+                        className="bg-background hover:bg-secondary/20"
                       >
                         <Plus className="h-3 w-3 mr-1" />
                         {globalAttr.name}
@@ -1058,8 +1058,8 @@ function RouteComponent() {
         </div>
 
         {updateProductMutation.isError && (
-          <div className="rounded-md bg-red-50 border border-red-200 p-4">
-            <p className="text-sm text-red-800">
+          <div className="rounded-md bg-destructive/10 border border-destructive p-4">
+            <p className="text-sm text-destructive">
               Error updating product. Please check all fields and try again.
             </p>
           </div>

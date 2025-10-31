@@ -552,19 +552,19 @@ function RouteComponent() {
                           />
                           {image.isUploading && (
                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                              <Loader className="h-6 w-6 text-white animate-spin" />
+                              <Loader className="h-6 w-6 text-foreground animate-spin" />
                             </div>
                           )}
                           {image.uploadError && !image.isUploading && (
-                            <div className="absolute inset-0 bg-red-500/90 flex items-center justify-center p-2">
-                              <div className="text-white text-xs text-center">
+                            <div className="absolute inset-0 bg-destructive/90 flex items-center justify-center p-2">
+                              <div className="text-destructive-foreground text-xs text-center">
                                 <p className="font-semibold mb-1">Upload Failed</p>
                                 <p>{image.uploadError}</p>
                               </div>
                             </div>
                           )}
                           {image.s3Url && !image.isUploading && !image.uploadError && (
-                            <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                            <div className="absolute top-1 left-1 bg-accent text-accent-foreground text-xs px-2 py-1 rounded">
                               Uploaded
                             </div>
                           )}
@@ -580,7 +580,7 @@ function RouteComponent() {
                           <X className="h-3 w-3" />
                         </Button>
                         {index === 0 && !image.uploadError && (
-                          <div className="absolute bottom-1 left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                          <div className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
                             Primary
                           </div>
                         )}
@@ -622,12 +622,12 @@ function RouteComponent() {
               <CardContent className="space-y-4">
                 {/* Popular Global Attributes - Quick Add Section */}
                 {availablePopularAttributes.length > 0 && (
-                  <div className="space-y-3 border rounded-lg p-4 bg-blue-50">
+                  <div className="space-y-3 border rounded-lg p-4 bg-secondary/10">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-sm text-blue-900">
+                      <h4 className="font-semibold text-sm text-secondary-foreground">
                         Popular Attributes
                       </h4>
-                      <p className="text-xs text-blue-700">Quick add</p>
+                      <p className="text-xs text-secondary-foreground/70">Quick add</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {availablePopularAttributes
@@ -639,7 +639,7 @@ function RouteComponent() {
                             variant="outline"
                             size="sm"
                             onClick={() => addGlobalAttribute(globalAttr)}
-                            className="bg-white hover:bg-blue-100"
+                            className="bg-background hover:bg-secondary/20"
                           >
                             <Plus className="h-3 w-3 mr-1" />
                             {globalAttr.name}
@@ -670,7 +670,7 @@ function RouteComponent() {
 
                 {/* If no popular attributes, show View All button directly */}
                 {availablePopularAttributes.length === 0 && (
-                  <div className="border rounded-lg p-4 bg-gray-50 text-center space-y-3">
+                  <div className="border rounded-lg p-4 bg-muted/30 text-center space-y-3">
                     <p className="text-sm text-muted-foreground">
                       Browse from all available attributes
                     </p>
@@ -1214,8 +1214,8 @@ function RouteComponent() {
         </div>
 
         {createProductMutation.isError && (
-          <div className="rounded-md bg-red-50 border border-red-200 p-4">
-            <p className="text-sm text-red-800">
+          <div className="rounded-md bg-destructive/10 border border-destructive p-4">
+            <p className="text-sm text-destructive">
               Error creating product. Please check all fields and try again.
             </p>
           </div>

@@ -70,14 +70,14 @@ export const CustomSelect = React.forwardRef<
           type="button"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
-          className={`w-full px-3 py-2 text-left bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-            disabled ? "bg-gray-100 cursor-not-allowed opacity-50" : ""
+          className={`w-full px-3 py-2 text-left bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-primary focus:border-primary transition-colors ${
+            disabled ? "bg-muted cursor-not-allowed opacity-50" : ""
           }`}
         >
           <div className="flex justify-between items-center">
             <span
               className={
-                value ? "text-gray-900" : "text-gray-500"
+                value ? "text-foreground" : "text-muted-foreground"
               }
             >
               {selectedLabel}
@@ -101,7 +101,7 @@ export const CustomSelect = React.forwardRef<
         </button>
 
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+          <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg">
             <ul className="max-h-48 overflow-y-auto py-1">
               {options.map((option) => (
                 <li key={option.value}>
@@ -110,8 +110,8 @@ export const CustomSelect = React.forwardRef<
                     onClick={() => handleSelect(option.value)}
                     className={`w-full text-left px-3 py-2 cursor-pointer transition-colors ${
                       value === option.value
-                        ? "bg-blue-500 text-white font-medium"
-                        : "text-gray-900 hover:bg-gray-100"
+                        ? "bg-primary text-primary-foreground font-medium"
+                        : "text-foreground hover:bg-muted"
                     }`}
                   >
                     {option.label}

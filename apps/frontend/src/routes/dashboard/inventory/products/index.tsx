@@ -111,8 +111,8 @@ function RouteComponent() {
           <div
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
               isActive
-                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                ? "bg-accent text-accent-foreground"
+                : "bg-muted text-muted-foreground"
             }`}
           >
             {isActive ? "Active" : "Inactive"}
@@ -343,7 +343,7 @@ function RouteComponent() {
                 </Button>
               </div>
               {deleteProductMutation.isError && (
-                <div className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+                <div className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
                   Error deleting product. Please try again or check if the
                   product has associated orders.
                 </div>

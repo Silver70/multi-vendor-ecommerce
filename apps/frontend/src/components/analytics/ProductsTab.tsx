@@ -150,7 +150,7 @@ export function ProductsTab({ dateRange }: ProductsTabProps) {
               config={{
                 revenue: {
                   label: "Revenue",
-                  color: "hsl(var(--chart-2))",
+                  color: "var(--chart-2)",
                 },
               }}
               className="h-[300px] w-full"
@@ -160,23 +160,23 @@ export function ProductsTab({ dateRange }: ProductsTabProps) {
                   <CartesianGrid
                     strokeDasharray="3 3"
                     className="stroke-muted"
-                    stroke="hsl(var(--border))"
+                    stroke="var(--border)"
                   />
                   <XAxis
                     dataKey="name"
                     className="text-xs"
-                    tick={{ fill: "hsl(var(--foreground))" }}
-                    stroke="hsl(var(--border))"
+                    tick={{ fill: "var(--foreground)" }}
+                    stroke="var(--border)"
                   />
                   <YAxis
                     className="text-xs"
-                    tick={{ fill: "hsl(var(--foreground))" }}
-                    stroke="hsl(var(--border))"
+                    tick={{ fill: "var(--foreground)" }}
+                    stroke="var(--border)"
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar
                     dataKey="revenue"
-                    fill="hsl(var(--chart-2))"
+                    fill="var(--chart-2)"
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>

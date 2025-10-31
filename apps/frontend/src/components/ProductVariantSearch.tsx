@@ -119,7 +119,7 @@ export function ProductVariantSearch({
 
           {/* Dropdown List */}
           {dropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-white shadow-lg z-50 max-h-[300px] overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-popover shadow-lg z-50 max-h-[300px] overflow-y-auto">
               {isLoadingVariants ? (
                 <div className="p-3 text-sm text-muted-foreground">
                   Loading variants...
@@ -140,7 +140,7 @@ export function ProductVariantSearch({
                           onClick={() => handleSelectVariant(variant)}
                           className={`w-full text-left p-3 border-b last:border-b-0 transition-colors ${
                             isRecentlyAdded
-                              ? "bg-green-100 hover:bg-green-150"
+                              ? "bg-accent hover:bg-accent/80"
                               : "hover:bg-muted"
                           }`}
                         >
@@ -158,8 +158,8 @@ export function ProductVariantSearch({
                               <span
                                 className={`text-xs ${
                                   variant.stock > 0
-                                    ? "text-green-600"
-                                    : "text-red-600"
+                                    ? "text-accent-foreground"
+                                    : "text-destructive"
                                 }`}
                               >
                                 {variant.stock} in stock

@@ -130,11 +130,11 @@ export function CustomersTab({ dateRange }: CustomersTabProps) {
               config={{
                 website: {
                   label: "Website",
-                  color: "hsl(var(--chart-1))",
+                  color: "var(--chart-1)",
                 },
                 admin: {
                   label: "Admin",
-                  color: "hsl(var(--chart-2))",
+                  color: "var(--chart-2)",
                 },
               }}
               className="h-[300px] w-full"
@@ -144,22 +144,22 @@ export function CustomersTab({ dateRange }: CustomersTabProps) {
                   <CartesianGrid
                     strokeDasharray="3 3"
                     className="stroke-muted"
-                    stroke="hsl(var(--border))"
+                    stroke="var(--border)"
                   />
                   <XAxis
                     dataKey="date"
                     className="text-xs"
-                    tick={{ fill: "hsl(var(--foreground))" }}
-                    stroke="hsl(var(--border))"
+                    tick={{ fill: "var(--foreground)" }}
+                    stroke="var(--border)"
                   />
                   <YAxis
                     className="text-xs"
-                    tick={{ fill: "hsl(var(--foreground))" }}
-                    stroke="hsl(var(--border))"
+                    tick={{ fill: "var(--foreground)" }}
+                    stroke="var(--border)"
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="website" fill="hsl(var(--chart-1))" />
-                  <Bar dataKey="admin" fill="hsl(var(--chart-2))" />
+                  <Bar dataKey="website" fill="var(--chart-1)" />
+                  <Bar dataKey="admin" fill="var(--chart-2)" />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>

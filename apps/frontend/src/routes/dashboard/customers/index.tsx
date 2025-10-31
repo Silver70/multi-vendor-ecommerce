@@ -102,8 +102,8 @@ function RouteComponent() {
           <div
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
               isFromWebsite
-                ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground"
             }`}
           >
             {isFromWebsite ? "Website" : "Admin"}
