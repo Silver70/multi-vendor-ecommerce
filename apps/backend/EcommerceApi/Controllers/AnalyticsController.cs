@@ -1175,6 +1175,9 @@ namespace EcommerceApi.Controllers
         {
             try
             {
+                // Convert to UTC to avoid PostgreSQL timestamp issues
+                fromDate = ToUtc(fromDate);
+                toDate = ToUtc(toDate);
                 var query = _context.Payments.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -1217,6 +1220,9 @@ namespace EcommerceApi.Controllers
         {
             try
             {
+                // Convert to UTC to avoid PostgreSQL timestamp issues
+                fromDate = ToUtc(fromDate);
+                toDate = ToUtc(toDate);
                 var query = _context.Payments.AsQueryable();
 
                 if (fromDate.HasValue)
@@ -1296,6 +1302,9 @@ namespace EcommerceApi.Controllers
         {
             try
             {
+                // Convert to UTC to avoid PostgreSQL timestamp issues
+                fromDate = ToUtc(fromDate);
+                toDate = ToUtc(toDate);
                 var query = _context.Payments.AsQueryable();
 
                 if (fromDate.HasValue)
