@@ -244,6 +244,7 @@ export const productQueries = {
     queryOptions({
       queryKey: productQueries.lists(),
       queryFn: () => getProducts(),
+      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     }),
 
   getById: (id: string) =>

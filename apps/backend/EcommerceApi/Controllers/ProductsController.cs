@@ -290,6 +290,8 @@ namespace EcommerceApi.Controllers
             {
                 var query = _context.Products
                     .Include(p => p.Images)
+                    .Include(p => p.Vendor)
+                    .Include(p => p.Category)
                     .AsQueryable();
 
                 // Apply filters
