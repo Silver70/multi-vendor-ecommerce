@@ -10,6 +10,7 @@ export type Product = {
   updatedAt: string
   vendorName: string
   categoryName: string
+  imageUrl?: string
 }
 
 export type ProductVariant = {

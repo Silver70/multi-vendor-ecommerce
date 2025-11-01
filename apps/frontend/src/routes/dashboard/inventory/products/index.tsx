@@ -8,6 +8,7 @@ import {
   Plus,
   Search,
   AlertCircle,
+  Image as ImageIcon,
 } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
@@ -64,12 +65,35 @@ function RouteComponent() {
 
   const columns: ColumnDef<Product>[] = [
     {
+      id: "image",
+      header: "Image",
+      cell: ({ row }) => {
+        const product = row.original;
+        return (
+          <div className="flex items-center justify-center">
+            {product.imageUrl ? (
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="h-12 w-12 rounded object-cover"
+              />
+            ) : (
+              <div className="h-12 w-12 rounded bg-muted flex items-center justify-center">
+                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "name",
       header: ({ column }) => {
         return (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="w-full justify-start"
           >
             Product Name
             <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -89,18 +113,6 @@ function RouteComponent() {
       accessorKey: "vendorName",
       header: "Vendor",
       cell: ({ row }) => <div>{row.getValue("vendorName") || "N/A"}</div>,
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => {
-        const description = row.getValue("description") as string | null;
-        return (
-          <div className="max-w-xs truncate text-muted-foreground">
-            {description || "No description"}
-          </div>
-        );
-      },
     },
     {
       accessorKey: "isActive",

@@ -13,5 +13,6 @@ namespace EcommerceApi.DTOs.Product
         public DateTime UpdatedAt { get; set; }
         public string? VendorName { get; set; }
         public string? CategoryName { get; set; }
+        public string? ImageUrl { get; set; }
     }
 }

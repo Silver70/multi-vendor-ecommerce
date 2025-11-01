@@ -288,7 +288,9 @@ namespace EcommerceApi.Controllers
         {
             try
             {
-                var query = _context.Products.AsQueryable();
+                var query = _context.Products
+                    .Include(p => p.Images)
+                    .AsQueryable();
 
                 // Apply filters
                 if (!string.IsNullOrWhiteSpace(filterParams.Name))
@@ -317,11 +319,35 @@ namespace EcommerceApi.Controllers
                 // Apply sorting
                 query = ApplySorting(query, filterParams.SortBy, filterParams.SortDescending);
 
-                // Apply pagination
-                var items = await query
+                // Apply pagination and get the products with images
+                var products = await query
                     .Skip((filterParams.PageNumber - 1) * filterParams.PageSize)
                     .Take(filterParams.PageSize)
-                    .Select(p => new ProductDto
+                    .ToListAsync();
+
+                // Map to ProductDto with image handling
+                var items = new List<ProductDto>();
+                foreach (var p in products)
+                {
+                    var primaryImage = p.Images?.FirstOrDefault(img => img.IsPrimary) ?? p.Images?.FirstOrDefault();
+                    var imageUrl = primaryImage?.ImageUrl;
+
+                    // Generate pre-signed URL if image exists
+                    if (!string.IsNullOrEmpty(imageUrl))
+                    {
+                        try
+                        {
+                            var s3Key = _s3Service.ExtractS3KeyFromUrl(imageUrl);
+                            imageUrl = _s3Service.GeneratePresignedGetUrl(s3Key, expirationHours: 1);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error generating pre-signed URL for product image {ProductId}", p.Id);
+                            // Keep original URL if pre-signed generation fails
+                        }
+                    }
+
+                    items.Add(new ProductDto
                     {
                         Id = p.Id,
                         VendorId = p.VendorId,
@@ -333,9 +359,10 @@ namespace EcommerceApi.Controllers
                         CreatedAt = p.CreatedAt,
                         UpdatedAt = p.UpdatedAt,
                         VendorName = p.Vendor != null ? p.Vendor.Name : null,
-                        CategoryName = p.Category != null ? p.Category.Name : null
-                    })
-                    .ToListAsync();
+                        CategoryName = p.Category != null ? p.Category.Name : null,
+                        ImageUrl = imageUrl
+                    });
+                }
 
                 var result = new PagedResult<ProductDto>
                 {

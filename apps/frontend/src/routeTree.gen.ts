@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ProductsSlugRouteImport } from './routes/products/$slug'
 import { Route as DashboardOverviewRouteImport } from './routes/dashboard/overview'
 import { Route as AuthUnauthorizedRouteImport } from './routes/auth/unauthorized'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
@@ -36,11 +35,6 @@ const DashboardRouteRoute = DashboardRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProductsSlugRoute = ProductsSlugRouteImport.update({
-  id: '/products/$slug',
-  path: '/products/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardOverviewRoute = DashboardOverviewRouteImport.update({
@@ -132,7 +126,6 @@ export interface FileRoutesByFullPath {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/unauthorized': typeof AuthUnauthorizedRoute
   '/dashboard/overview': typeof DashboardOverviewRoute
-  '/products/$slug': typeof ProductsSlugRoute
   '/dashboard/orders/$orderId': typeof DashboardOrdersOrderIdRoute
   '/dashboard/orders/create': typeof DashboardOrdersCreateRoute
   '/dashboard/analytics': typeof DashboardAnalyticsIndexRoute
@@ -152,7 +145,6 @@ export interface FileRoutesByTo {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/unauthorized': typeof AuthUnauthorizedRoute
   '/dashboard/overview': typeof DashboardOverviewRoute
-  '/products/$slug': typeof ProductsSlugRoute
   '/dashboard/orders/$orderId': typeof DashboardOrdersOrderIdRoute
   '/dashboard/orders/create': typeof DashboardOrdersCreateRoute
   '/dashboard/analytics': typeof DashboardAnalyticsIndexRoute
@@ -173,7 +165,6 @@ export interface FileRoutesById {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/unauthorized': typeof AuthUnauthorizedRoute
   '/dashboard/overview': typeof DashboardOverviewRoute
-  '/products/$slug': typeof ProductsSlugRoute
   '/dashboard/orders/$orderId': typeof DashboardOrdersOrderIdRoute
   '/dashboard/orders/create': typeof DashboardOrdersCreateRoute
   '/dashboard/analytics/': typeof DashboardAnalyticsIndexRoute
@@ -195,7 +186,6 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/unauthorized'
     | '/dashboard/overview'
-    | '/products/$slug'
     | '/dashboard/orders/$orderId'
     | '/dashboard/orders/create'
     | '/dashboard/analytics'
@@ -215,7 +205,6 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/unauthorized'
     | '/dashboard/overview'
-    | '/products/$slug'
     | '/dashboard/orders/$orderId'
     | '/dashboard/orders/create'
     | '/dashboard/analytics'
@@ -235,7 +224,6 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/unauthorized'
     | '/dashboard/overview'
-    | '/products/$slug'
     | '/dashboard/orders/$orderId'
     | '/dashboard/orders/create'
     | '/dashboard/analytics/'
@@ -255,7 +243,6 @@ export interface RootRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
   AuthUnauthorizedRoute: typeof AuthUnauthorizedRoute
-  ProductsSlugRoute: typeof ProductsSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -272,13 +259,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/products/$slug': {
-      id: '/products/$slug'
-      path: '/products/$slug'
-      fullPath: '/products/$slug'
-      preLoaderRoute: typeof ProductsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/overview': {
@@ -431,7 +411,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   AuthUnauthorizedRoute: AuthUnauthorizedRoute,
-  ProductsSlugRoute: ProductsSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
