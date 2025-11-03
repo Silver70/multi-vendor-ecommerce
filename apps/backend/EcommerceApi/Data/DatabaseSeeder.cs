@@ -356,7 +356,8 @@ namespace EcommerceApi.Data
                 Description = "High-performance laptop with 16GB RAM, 512GB SSD, and powerful processor for professionals and gamers.",
                 CategoryId = categories.First(c => c.Name == "Electronics").Id,
                 VendorId = vendors.First(v => v.Name == "TechWorld Electronics").Id,
-                IsActive = true
+                IsActive = true,
+                BasePrice = 1299.99m  // 🆕 NEW: Base price (average of variants)
             };
             products.Add(laptop);
 
@@ -416,7 +417,8 @@ namespace EcommerceApi.Data
                 Description = "Premium wireless headphones with active noise cancellation, 30-hour battery life, and studio-quality sound.",
                 CategoryId = categories.First(c => c.Name == "Electronics").Id,
                 VendorId = vendors.First(v => v.Name == "TechWorld Electronics").Id,
-                IsActive = true
+                IsActive = true,
+                BasePrice = 349.99m  // 🆕 NEW
             };
             products.Add(headphones);
 
@@ -455,7 +457,8 @@ namespace EcommerceApi.Data
                 Description = "Comfortable and stylish slim-fit denim jeans, perfect for everyday wear. Made from premium cotton blend.",
                 CategoryId = categories.First(c => c.Name == "Clothing").Id,
                 VendorId = vendors.First(v => v.Name == "Fashion Hub").Id,
-                IsActive = true
+                IsActive = true,
+                BasePrice = 79.99m  // 🆕 NEW
             };
             products.Add(jeans);
 
@@ -523,7 +526,8 @@ namespace EcommerceApi.Data
                 Description = "Soft, breathable 100% organic cotton t-shirt available in multiple colors. Perfect for casual wear.",
                 CategoryId = categories.First(c => c.Name == "Clothing").Id,
                 VendorId = vendors.First(v => v.Name == "Fashion Hub").Id,
-                IsActive = true
+                IsActive = true,
+                BasePrice = 29.99m  // 🆕 NEW
             };
             products.Add(tshirt);
 
@@ -578,7 +582,8 @@ namespace EcommerceApi.Data
                 Description = "12-cup programmable coffee maker with auto-shutoff and brew strength control. Wake up to fresh coffee every morning.",
                 CategoryId = categories.First(c => c.Name == "Home & Garden").Id,
                 VendorId = vendors.First(v => v.Name == "HomeStyle Living").Id,
-                IsActive = true
+                IsActive = true,
+                BasePrice = 89.99m  // 🆕 NEW
             };
             products.Add(coffeemaker);
 
@@ -603,7 +608,8 @@ namespace EcommerceApi.Data
                 Description = "Ultra-soft bamboo bed sheets set including fitted sheet, flat sheet, and pillowcases. Hypoallergenic and breathable.",
                 CategoryId = categories.First(c => c.Name == "Home & Garden").Id,
                 VendorId = vendors.First(v => v.Name == "HomeStyle Living").Id,
-                IsActive = true
+                IsActive = true,
+                BasePrice = 129.99m  // 🆕 NEW
             };
             products.Add(bedSheets);
 
@@ -644,7 +650,8 @@ namespace EcommerceApi.Data
                 Description = "Non-slip, eco-friendly yoga mat made from natural rubber. Includes carrying strap. Perfect for yoga, pilates, and fitness.",
                 CategoryId = categories.First(c => c.Name == "Sports & Outdoors").Id,
                 VendorId = vendors.First(v => v.Name == "Active Sports Co").Id,
-                IsActive = true
+                IsActive = true,
+                BasePrice = 49.99m  // 🆕 NEW
             };
             products.Add(yogaMat);
 
@@ -684,7 +691,8 @@ namespace EcommerceApi.Data
                 Description = "Space-saving adjustable dumbbells with quick-change weight system. Replaces 15 sets of weights.",
                 CategoryId = categories.First(c => c.Name == "Sports & Outdoors").Id,
                 VendorId = vendors.First(v => v.Name == "Active Sports Co").Id,
-                IsActive = true
+                IsActive = true,
+                BasePrice = 299.99m  // 🆕 NEW
             };
             products.Add(dumbbells);
 
@@ -710,7 +718,8 @@ namespace EcommerceApi.Data
                 Description = "Complete guide to modern cooking techniques with 200+ recipes. Hardcover edition with beautiful photography.",
                 CategoryId = categories.First(c => c.Name == "Books").Id,
                 VendorId = vendors.First(v => v.Name == "BookWorm Publishers").Id,
-                IsActive = true
+                IsActive = true,
+                BasePrice = 34.99m  // 🆕 NEW
             };
             products.Add(cookbook);
 
@@ -749,7 +758,8 @@ namespace EcommerceApi.Data
                 Description = "Award-winning strategy board game for 2-4 players. Build your empire and outwit your opponents. Ages 12+.",
                 CategoryId = categories.First(c => c.Name == "Toys & Games").Id,
                 VendorId = vendors.First(v => v.Name == "PlayTime Toys").Id,
-                IsActive = true
+                IsActive = true,
+                BasePrice = 59.99m  // 🆕 NEW
             };
             products.Add(boardGame);
 
@@ -775,7 +785,8 @@ namespace EcommerceApi.Data
                 Description = "Anti-aging vitamin C serum with hyaluronic acid. Brightens skin and reduces fine lines. Dermatologist tested.",
                 CategoryId = categories.First(c => c.Name == "Beauty & Personal Care").Id,
                 VendorId = vendors.First(v => v.Name == "GlowBeauty").Id,
-                IsActive = true
+                IsActive = true,
+                BasePrice = 39.99m  // 🆕 NEW
             };
             products.Add(skincare);
 
@@ -1119,28 +1130,46 @@ namespace EcommerceApi.Data
 
             var addresses = await context.Addresses.ToListAsync();
             var variants = await context.ProductVariants.ToListAsync();
+            var channels = await context.Channels.ToListAsync();  // 🆕 NEW
 
             var orders = new List<Order>();
             var orderItems = new List<OrderItem>();
             var payments = new List<Payment>();
+
+            // Get the Direct Web channel for seeding
+            var directWebChannel = channels.First(c => c.Name == "Direct Web");  // 🆕 NEW
 
             // Order 1: Completed order with laptop and headphones
             var order1 = new Order
             {
                 Id = Guid.NewGuid(),
                 CustomerId = customerId,
+                ChannelId = directWebChannel.Id,  // 🆕 NEW
                 AddressId = addresses[0].Id,
                 Status = "delivered",
+                SubtotalAmount = 0,  // 🆕 NEW
+                TaxAmount = 0,  // 🆕 NEW
+                ShippingAmount = 0,  // 🆕 NEW
                 TotalAmount = 0,
+                CurrencyCode = directWebChannel.CurrencyCode,  // 🆕 NEW
                 CreatedAt = DateTime.UtcNow.AddDays(-30)
             };
 
             var laptopVariant = variants.First(v => v.Sku == "LAPTOP-15-SILVER-16GB-512GB");
             var headphonesVariant = variants.First(v => v.Sku == "HP-WNC-BLACK");
 
-            orderItems.Add(new OrderItem { Id = Guid.NewGuid(), OrderId = order1.Id, VariantId = laptopVariant.Id, Quantity = 1, Price = laptopVariant.Price });
-            orderItems.Add(new OrderItem { Id = Guid.NewGuid(), OrderId = order1.Id, VariantId = headphonesVariant.Id, Quantity = 1, Price = headphonesVariant.Price });
-            order1.TotalAmount = laptopVariant.Price + headphonesVariant.Price;
+            var subtotal1 = laptopVariant.Price + headphonesVariant.Price;
+            var tax1 = Math.Round(subtotal1 * directWebChannel.DefaultTaxRate, 2);  // 🆕 NEW: Calculate tax
+
+            orderItems.Add(new OrderItem { Id = Guid.NewGuid(), OrderId = order1.Id, VariantId = laptopVariant.Id, Quantity = 1, Price = laptopVariant.Price, ChannelId = directWebChannel.Id });  // 🆕 NEW: ChannelId
+            orderItems.Add(new OrderItem { Id = Guid.NewGuid(), OrderId = order1.Id, VariantId = headphonesVariant.Id, Quantity = 1, Price = headphonesVariant.Price, ChannelId = directWebChannel.Id });  // 🆕 NEW: ChannelId
+
+            order1.SubtotalAmount = subtotal1;  // 🆕 NEW
+            order1.TaxAmount = tax1;  // 🆕 NEW
+            order1.AppliedTaxRate = directWebChannel.DefaultTaxRate;  // 🆕 NEW
+            order1.AppliedTaxRuleName = "US Sales Tax";  // 🆕 NEW
+            order1.TaxInclusive = directWebChannel.TaxBehavior == "inclusive";  // 🆕 NEW
+            order1.TotalAmount = subtotal1 + tax1;
 
             payments.Add(new Payment
             {
@@ -1160,18 +1189,32 @@ namespace EcommerceApi.Data
             {
                 Id = Guid.NewGuid(),
                 CustomerId = customerId,
+                ChannelId = directWebChannel.Id,  // 🆕 NEW
                 AddressId = addresses[1].Id,
                 Status = "shipped",
+                SubtotalAmount = 0,  // 🆕 NEW
+                TaxAmount = 0,  // 🆕 NEW
+                ShippingAmount = 0,  // 🆕 NEW
                 TotalAmount = 0,
+                CurrencyCode = directWebChannel.CurrencyCode,  // 🆕 NEW
                 CreatedAt = DateTime.UtcNow.AddDays(-10)
             };
 
             var jeansVariant = variants.First(v => v.Sku == "JEANS-BLUE-32");
             var tshirtVariant = variants.First(v => v.Sku == "TSHIRT-WHITE-M");
 
-            orderItems.Add(new OrderItem { Id = Guid.NewGuid(), OrderId = order2.Id, VariantId = jeansVariant.Id, Quantity = 2, Price = jeansVariant.Price });
-            orderItems.Add(new OrderItem { Id = Guid.NewGuid(), OrderId = order2.Id, VariantId = tshirtVariant.Id, Quantity = 3, Price = tshirtVariant.Price });
-            order2.TotalAmount = (jeansVariant.Price * 2) + (tshirtVariant.Price * 3);
+            var subtotal2 = (jeansVariant.Price * 2) + (tshirtVariant.Price * 3);
+            var tax2 = Math.Round(subtotal2 * directWebChannel.DefaultTaxRate, 2);  // 🆕 NEW: Calculate tax
+
+            orderItems.Add(new OrderItem { Id = Guid.NewGuid(), OrderId = order2.Id, VariantId = jeansVariant.Id, Quantity = 2, Price = jeansVariant.Price, ChannelId = directWebChannel.Id });  // 🆕 NEW: ChannelId
+            orderItems.Add(new OrderItem { Id = Guid.NewGuid(), OrderId = order2.Id, VariantId = tshirtVariant.Id, Quantity = 3, Price = tshirtVariant.Price, ChannelId = directWebChannel.Id });  // 🆕 NEW: ChannelId
+
+            order2.SubtotalAmount = subtotal2;  // 🆕 NEW
+            order2.TaxAmount = tax2;  // 🆕 NEW
+            order2.AppliedTaxRate = directWebChannel.DefaultTaxRate;  // 🆕 NEW
+            order2.AppliedTaxRuleName = "US Sales Tax";  // 🆕 NEW
+            order2.TaxInclusive = directWebChannel.TaxBehavior == "inclusive";  // 🆕 NEW
+            order2.TotalAmount = subtotal2 + tax2;
 
             payments.Add(new Payment
             {
@@ -1191,18 +1234,32 @@ namespace EcommerceApi.Data
             {
                 Id = Guid.NewGuid(),
                 CustomerId = customerId,
+                ChannelId = directWebChannel.Id,  // 🆕 NEW
                 AddressId = addresses[2].Id,
                 Status = "paid",
+                SubtotalAmount = 0,  // 🆕 NEW
+                TaxAmount = 0,  // 🆕 NEW
+                ShippingAmount = 0,  // 🆕 NEW
                 TotalAmount = 0,
+                CurrencyCode = directWebChannel.CurrencyCode,  // 🆕 NEW
                 CreatedAt = DateTime.UtcNow.AddDays(-5)
             };
 
             var yogaMatVariant = variants.First(v => v.Sku == "YOGA-MAT-PURPLE");
             var dumbbellVariant = variants.First(v => v.Sku == "DUMBELL-ADJ-50LB");
 
-            orderItems.Add(new OrderItem { Id = Guid.NewGuid(), OrderId = order3.Id, VariantId = yogaMatVariant.Id, Quantity = 1, Price = yogaMatVariant.Price });
-            orderItems.Add(new OrderItem { Id = Guid.NewGuid(), OrderId = order3.Id, VariantId = dumbbellVariant.Id, Quantity = 1, Price = dumbbellVariant.Price });
-            order3.TotalAmount = yogaMatVariant.Price + dumbbellVariant.Price;
+            var subtotal3 = yogaMatVariant.Price + dumbbellVariant.Price;
+            var tax3 = Math.Round(subtotal3 * directWebChannel.DefaultTaxRate, 2);  // 🆕 NEW: Calculate tax
+
+            orderItems.Add(new OrderItem { Id = Guid.NewGuid(), OrderId = order3.Id, VariantId = yogaMatVariant.Id, Quantity = 1, Price = yogaMatVariant.Price, ChannelId = directWebChannel.Id });  // 🆕 NEW: ChannelId
+            orderItems.Add(new OrderItem { Id = Guid.NewGuid(), OrderId = order3.Id, VariantId = dumbbellVariant.Id, Quantity = 1, Price = dumbbellVariant.Price, ChannelId = directWebChannel.Id });  // 🆕 NEW: ChannelId
+
+            order3.SubtotalAmount = subtotal3;  // 🆕 NEW
+            order3.TaxAmount = tax3;  // 🆕 NEW
+            order3.AppliedTaxRate = directWebChannel.DefaultTaxRate;  // 🆕 NEW
+            order3.AppliedTaxRuleName = "US Sales Tax";  // 🆕 NEW
+            order3.TaxInclusive = directWebChannel.TaxBehavior == "inclusive";  // 🆕 NEW
+            order3.TotalAmount = subtotal3 + tax3;
 
             payments.Add(new Payment
             {

@@ -14,11 +14,13 @@ namespace EcommerceApi.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IChannelService _channelService;
         private readonly ILogger<OrdersController> _logger;
 
-        public OrdersController(AppDbContext context, ILogger<OrdersController> logger)
+        public OrdersController(AppDbContext context, IChannelService channelService, ILogger<OrdersController> logger)
         {
             _context = context;
+            _channelService = channelService;
             _logger = logger;
         }
 
@@ -52,6 +54,7 @@ namespace EcommerceApi.Controllers
                 query = ApplySorting(query, filterParams.SortBy, filterParams.SortDescending);
 
                 var items = await query
+                    .Include(o => o.Channel)
                     .Skip((filterParams.PageNumber - 1) * filterParams.PageSize)
                     .Take(filterParams.PageSize)
                     .Select(o => new OrderDto
@@ -59,8 +62,17 @@ namespace EcommerceApi.Controllers
                         Id = o.Id,
                         CustomerId = o.CustomerId,
                         AddressId = o.AddressId,
+                        ChannelId = o.ChannelId,
                         Status = o.Status,
+                        SubtotalAmount = o.SubtotalAmount,
+                        TaxAmount = o.TaxAmount,
+                        ShippingAmount = o.ShippingAmount,
                         TotalAmount = o.TotalAmount,
+                        AppliedTaxRuleName = o.AppliedTaxRuleName,
+                        AppliedTaxRate = o.AppliedTaxRate,
+                        TaxInclusive = o.TaxInclusive,
+                        CurrencyCode = o.CurrencyCode,
+                        ExternalOrderId = o.ExternalOrderId,
                         CreatedAt = o.CreatedAt,
                         Customer = o.Customer != null ? MapCustomerToDto(o.Customer) : null,
                         Address = o.Address != null ? new AddressInfo
@@ -73,6 +85,7 @@ namespace EcommerceApi.Controllers
                             Country = o.Address.Country,
                             Phone = o.Address.Phone
                         } : null,
+                        Channel = o.Channel != null ? MapChannelToDto(o.Channel) : null,
                         Items = null // Don't include items in list view for performance
                     })
                     .ToListAsync();
@@ -100,14 +113,24 @@ namespace EcommerceApi.Controllers
             try
             {
                 var order = await _context.Orders
+                    .Include(o => o.Channel)
                     .Where(o => o.Id == id)
                     .Select(o => new OrderDto
                     {
                         Id = o.Id,
                         CustomerId = o.CustomerId,
                         AddressId = o.AddressId,
+                        ChannelId = o.ChannelId,
                         Status = o.Status,
+                        SubtotalAmount = o.SubtotalAmount,
+                        TaxAmount = o.TaxAmount,
+                        ShippingAmount = o.ShippingAmount,
                         TotalAmount = o.TotalAmount,
+                        AppliedTaxRuleName = o.AppliedTaxRuleName,
+                        AppliedTaxRate = o.AppliedTaxRate,
+                        TaxInclusive = o.TaxInclusive,
+                        CurrencyCode = o.CurrencyCode,
+                        ExternalOrderId = o.ExternalOrderId,
                         CreatedAt = o.CreatedAt,
                         Customer = o.Customer != null ? MapCustomerToDto(o.Customer) : null,
                         Address = o.Address != null ? new AddressInfo
@@ -120,6 +143,7 @@ namespace EcommerceApi.Controllers
                             Country = o.Address.Country,
                             Phone = o.Address.Phone
                         } : null,
+                        Channel = o.Channel != null ? MapChannelToDto(o.Channel) : null,
 
                         Items = o.Items != null ? o.Items.Select(item => new OrderItemInfo
                         {
@@ -165,6 +189,11 @@ namespace EcommerceApi.Controllers
                 if (!customerExists)
                     return BadRequest(new { message = "Customer not found" });
 
+                // 🆕 NEW: Validate channel exists
+                var channel = await _context.Channels.FindAsync(createDto.ChannelId);
+                if (channel == null)
+                    return BadRequest(new { message = "Channel not found" });
+
                 // Validate address exists and belongs to customer
                 var address = await _context.Addresses
                     .FirstOrDefaultAsync(a => a.Id == createDto.AddressId && a.CustomerId == createDto.CustomerId);
@@ -174,6 +203,7 @@ namespace EcommerceApi.Controllers
                 // Validate all variants exist and have sufficient stock
                 var variantIds = createDto.Items.Select(i => i.VariantId).ToList();
                 var variants = await _context.ProductVariants
+                    .Include(v => v.Product)
                     .Where(v => variantIds.Contains(v.Id))
                     .ToListAsync();
 
@@ -188,8 +218,8 @@ namespace EcommerceApi.Controllers
                         return BadRequest(new { message = $"Insufficient stock for variant {variant.Sku}. Available: {variant.Stock}, Requested: {item.Quantity}" });
                 }
 
-                // Calculate total amount
-                decimal totalAmount = 0;
+                // Calculate subtotal amount
+                decimal subtotalAmount = 0;
                 var orderItems = new List<Models.OrderItem>();
 
                 foreach (var item in createDto.Items)
@@ -200,23 +230,43 @@ namespace EcommerceApi.Controllers
                         Id = Guid.NewGuid(),
                         VariantId = item.VariantId,
                         Quantity = item.Quantity,
-                        Price = variant.Price
+                        Price = variant.Price,
+                        ChannelId = createDto.ChannelId  // 🆕 NEW: Set channel ID
                     };
                     orderItems.Add(orderItem);
-                    totalAmount += orderItem.Price * orderItem.Quantity;
+                    subtotalAmount += orderItem.Price * orderItem.Quantity;
 
                     // Decrease stock
                     variant.Stock -= item.Quantity;
                 }
 
-                // Create order
+                // 🆕 NEW: Calculate tax using channel tax rules
+                var (taxAmount, taxRate, ruleName) = await _channelService.CalculateTaxAsync(
+                    createDto.ChannelId,
+                    subtotalAmount,
+                    categoryId: null,  // Can be enhanced to use first item's category
+                    isB2B: false);  // Can be enhanced to use customer type
+
+                // Calculate total amount with tax and shipping
+                decimal shippingAmount = createDto.ShippingAmount;
+                decimal totalAmount = subtotalAmount + taxAmount + shippingAmount;
+
+                // Create order with tax information
                 var order = new Models.Order
                 {
                     Id = Guid.NewGuid(),
                     CustomerId = createDto.CustomerId,
+                    ChannelId = createDto.ChannelId,  // 🆕 NEW
                     AddressId = createDto.AddressId,
                     Status = "pending",
+                    SubtotalAmount = subtotalAmount,  // 🆕 NEW
+                    TaxAmount = taxAmount,  // 🆕 NEW
+                    ShippingAmount = shippingAmount,  // 🆕 NEW
                     TotalAmount = totalAmount,
+                    AppliedTaxRuleName = ruleName,  // 🆕 NEW
+                    AppliedTaxRate = taxRate,  // 🆕 NEW
+                    TaxInclusive = channel.TaxBehavior == "inclusive",  // 🆕 NEW
+                    CurrencyCode = channel.CurrencyCode,  // 🆕 NEW
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -597,6 +647,27 @@ namespace EcommerceApi.Controllers
                 IsFromWebsite = customer.IsFromWebsite,
                 CreatedAt = customer.CreatedAt,
                 CreatedByUserName = customer.CreatedByUser?.Name
+            };
+        }
+
+        // 🆕 NEW: Map Channel to ChannelDto
+        private static EcommerceApi.DTOs.Channel.ChannelDto MapChannelToDto(Models.Channel channel)
+        {
+            return new EcommerceApi.DTOs.Channel.ChannelDto
+            {
+                Id = channel.Id,
+                Name = channel.Name,
+                Type = channel.Type,
+                Description = channel.Description,
+                IsActive = channel.IsActive,
+                CountryCode = channel.CountryCode,
+                RegionCode = channel.RegionCode,
+                CurrencyCode = channel.CurrencyCode,
+                IsB2B = channel.IsB2B,
+                DefaultTaxRate = channel.DefaultTaxRate,
+                TaxBehavior = channel.TaxBehavior,
+                CreatedAt = channel.CreatedAt,
+                UpdatedAt = channel.UpdatedAt
             };
         }
 
