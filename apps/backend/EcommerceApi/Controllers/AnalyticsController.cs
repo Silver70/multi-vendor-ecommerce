@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EcommerceApi.Data;
 using EcommerceApi.DTOs.Analytics;
+using EcommerceApi.Services;
 
 namespace EcommerceApi.Controllers
 {
@@ -10,11 +11,13 @@ namespace EcommerceApi.Controllers
     public class AnalyticsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IChannelContextService _channelContextService;
         private readonly ILogger<AnalyticsController> _logger;
 
-        public AnalyticsController(AppDbContext context, ILogger<AnalyticsController> logger)
+        public AnalyticsController(AppDbContext context, IChannelContextService channelContextService, ILogger<AnalyticsController> logger)
         {
             _context = context;
+            _channelContextService = channelContextService;
             _logger = logger;
         }
 
@@ -33,7 +36,8 @@ namespace EcommerceApi.Controllers
         [ProducesResponseType(typeof(RevenueSummaryDto), StatusCodes.Status200OK)]
         public async Task<ActionResult<RevenueSummaryDto>> GetRevenueSummary(
             [FromQuery] DateTime? fromDate,
-            [FromQuery] DateTime? toDate)
+            [FromQuery] DateTime? toDate,
+            [FromQuery] Guid? channelId)  // 🆕 NEW: Channel filter
         {
             try
             {
@@ -42,6 +46,21 @@ namespace EcommerceApi.Controllers
                 toDate = ToUtc(toDate);
                 var query = _context.Orders.AsQueryable();
 
+                // 🆕 NEW: Apply channel filter
+                if (channelId.HasValue)
+                {
+                    query = query.Where(o => o.ChannelId == channelId.Value);
+                }
+                else
+                {
+                    // 🆕 NEW: If no channel specified, use current channel context (if available)
+                    var currentChannelId = await _channelContextService.GetCurrentChannelIdAsync();
+                    if (currentChannelId.HasValue)
+                    {
+                        query = query.Where(o => o.ChannelId == currentChannelId.Value);
+                    }
+                }
+
                 if (fromDate.HasValue)
                     query = query.Where(o => o.CreatedAt >= fromDate.Value);
 
@@ -49,7 +68,16 @@ namespace EcommerceApi.Controllers
                     query = query.Where(o => o.CreatedAt <= toDate.Value);
 
                 var orders = await query.ToListAsync();
-                var payments = await _context.Payments
+                var paymentQuery = _context.Payments.AsQueryable();
+
+                // 🆕 NEW: Apply channel filter to payments
+                if (channelId.HasValue)
+                {
+                    var orderIds = orders.Select(o => o.Id).ToList();
+                    paymentQuery = paymentQuery.Where(p => orderIds.Contains(p.OrderId));
+                }
+
+                var payments = await paymentQuery
                     .Where(p => fromDate == null || p.CreatedAt >= fromDate.Value)
                     .Where(p => toDate == null || p.CreatedAt <= toDate.Value)
                     .ToListAsync();
@@ -80,7 +108,8 @@ namespace EcommerceApi.Controllers
         [ProducesResponseType(typeof(List<RevenueBreakdownDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<RevenueBreakdownDto>>> GetRevenueByStatus(
             [FromQuery] DateTime? fromDate,
-            [FromQuery] DateTime? toDate)
+            [FromQuery] DateTime? toDate,
+            [FromQuery] Guid? channelId)  // 🆕 NEW: Channel filter
         {
             try
             {
@@ -88,6 +117,21 @@ namespace EcommerceApi.Controllers
                 fromDate = ToUtc(fromDate);
                 toDate = ToUtc(toDate);
                 var query = _context.Orders.AsQueryable();
+
+                // 🆕 NEW: Apply channel filter
+                if (channelId.HasValue)
+                {
+                    query = query.Where(o => o.ChannelId == channelId.Value);
+                }
+                else
+                {
+                    // 🆕 NEW: If no channel specified, use current channel context (if available)
+                    var currentChannelId = await _channelContextService.GetCurrentChannelIdAsync();
+                    if (currentChannelId.HasValue)
+                    {
+                        query = query.Where(o => o.ChannelId == currentChannelId.Value);
+                    }
+                }
 
                 if (fromDate.HasValue)
                     query = query.Where(o => o.CreatedAt >= fromDate.Value);
@@ -330,6 +374,53 @@ namespace EcommerceApi.Controllers
             {
                 _logger.LogError(ex, "Error retrieving revenue trends");
                 return StatusCode(500, new { message = "An error occurred while retrieving revenue trends" });
+            }
+        }
+
+        /// <summary>
+        /// 🆕 NEW: Get revenue breakdown by channel
+        /// </summary>
+        [HttpGet("revenue/by-channel")]
+        [ProducesResponseType(typeof(List<RevenueBreakdownDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<RevenueBreakdownDto>>> GetRevenueByChannel(
+            [FromQuery] DateTime? fromDate,
+            [FromQuery] DateTime? toDate)
+        {
+            try
+            {
+                // Convert to UTC to avoid PostgreSQL timestamp issues
+                fromDate = ToUtc(fromDate);
+                toDate = ToUtc(toDate);
+
+                var query = _context.Orders
+                    .Include(o => o.Channel)
+                    .AsQueryable();
+
+                if (fromDate.HasValue)
+                    query = query.Where(o => o.CreatedAt >= fromDate.Value);
+
+                if (toDate.HasValue)
+                    query = query.Where(o => o.CreatedAt <= toDate.Value);
+
+                var breakdown = await query
+                    .GroupBy(o => o.ChannelId)
+                    .Select(g => new RevenueBreakdownDto
+                    {
+                        Category = g.FirstOrDefault().Channel != null ? g.FirstOrDefault().Channel.Name : "Unknown",
+                        CategoryType = "Channel",
+                        Revenue = g.Sum(o => o.TotalAmount),
+                        OrderCount = g.Count(),
+                        AverageOrderValue = g.Count() > 0 ? g.Sum(o => o.TotalAmount) / g.Count() : 0
+                    })
+                    .OrderByDescending(b => b.Revenue)
+                    .ToListAsync();
+
+                return Ok(breakdown);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving revenue by channel");
+                return StatusCode(500, new { message = "An error occurred while retrieving revenue by channel" });
             }
         }
 

@@ -66,6 +66,8 @@ builder.Services.AddScoped<SlugGenerator>();
 builder.Services.AddScoped<VariantGenerationService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IChannelService, ChannelService>();  // 🆕 NEW: Channel service
+builder.Services.AddScoped<IChannelContextService, ChannelContextService>();  // 🆕 NEW: Channel context service
+builder.Services.AddHttpContextAccessor();  // 🆕 NEW: Required for channel context service
 
 // Configure AWS S3
 var awsConfig = builder.Configuration.GetSection("AWS");

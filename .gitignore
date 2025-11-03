@@ -36,3 +36,30 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+
+# Backend
+# Build
+bin/
+obj/
+
+# User-specific files
+.vs/
+*.user
+*.suo
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+
+# Environment-specific
+appsettings.Development.json
+.env
+
+# Others
+launchSettings.json
+

@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EcommerceApi.Data;
 using EcommerceApi.DTOs.Vendor;
+using EcommerceApi.DTOs.Channel;
 using EcommerceApi.DTOs.Common;
+using EcommerceApi.Services;
 
 namespace EcommerceApi.Controllers
 {
@@ -11,11 +13,13 @@ namespace EcommerceApi.Controllers
     public class VendorsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IChannelService _channelService;
         private readonly ILogger<VendorsController> _logger;
 
-        public VendorsController(AppDbContext context, ILogger<VendorsController> logger)
+        public VendorsController(AppDbContext context, IChannelService channelService, ILogger<VendorsController> logger)
         {
             _context = context;
+            _channelService = channelService;
             _logger = logger;
         }
 
@@ -244,6 +248,7 @@ namespace EcommerceApi.Controllers
             {
                 var vendor = await _context.Vendors
                     .Include(v => v.Products)
+                    .Include(v => v.ChannelVendors)  // 🆕 NEW: Check channel associations
                     .FirstOrDefaultAsync(v => v.Id == id);
 
                 if (vendor == null)
@@ -257,6 +262,12 @@ namespace EcommerceApi.Controllers
                     return BadRequest(new { message = "Cannot delete vendor with associated products. Reassign or delete products first." });
                 }
 
+                // 🆕 NEW: Check if vendor is active on any channels
+                if (vendor.ChannelVendors != null && vendor.ChannelVendors.Any(cv => cv.IsActive))
+                {
+                    return BadRequest(new { message = "Cannot delete vendor that is active on channels. Remove vendor from all channels first." });
+                }
+
                 _context.Vendors.Remove(vendor);
                 await _context.SaveChangesAsync();
 
@@ -266,6 +277,102 @@ namespace EcommerceApi.Controllers
             {
                 _logger.LogError(ex, "Error deleting vendor {VendorId}", id);
                 return StatusCode(500, new { message = "An error occurred while deleting the vendor" });
+            }
+        }
+
+        /// <summary>
+        /// 🆕 NEW: Get all channels this vendor is active on
+        /// </summary>
+        [HttpGet("{vendorId}/channels")]
+        [ProducesResponseType(typeof(List<ChannelVendorDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<List<ChannelVendorDto>>> GetVendorChannels(Guid vendorId)
+        {
+            try
+            {
+                var vendor = await _context.Vendors.FindAsync(vendorId);
+                if (vendor == null)
+                    return NotFound(new { message = $"Vendor with ID {vendorId} not found" });
+
+                var channelVendors = await _channelService.GetVendorChannelsAsync(vendorId);
+                return Ok(channelVendors);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving vendor channels for vendor {VendorId}", vendorId);
+                return StatusCode(500, new { message = "An error occurred while retrieving vendor channels" });
+            }
+        }
+
+        /// <summary>
+        /// 🆕 NEW: Add vendor to a channel
+        /// </summary>
+        [HttpPost("{vendorId}/channels/{channelId}")]
+        [ProducesResponseType(typeof(ChannelVendorDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ChannelVendorDto>> AddVendorToChannel(Guid vendorId, Guid channelId)
+        {
+            try
+            {
+                // Validate vendor exists
+                var vendor = await _context.Vendors.FindAsync(vendorId);
+                if (vendor == null)
+                    return NotFound(new { message = $"Vendor with ID {vendorId} not found" });
+
+                // Validate channel exists
+                var channel = await _context.Channels.FindAsync(channelId);
+                if (channel == null)
+                    return NotFound(new { message = $"Channel with ID {channelId} not found" });
+
+                var dto = new CreateChannelVendorDto
+                {
+                    VendorId = vendorId,
+                    IsActive = true
+                };
+
+                var result = await _channelService.AddVendorToChannelAsync(channelId, dto);
+                return CreatedAtAction(nameof(GetVendorChannels), new { vendorId }, result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding vendor {VendorId} to channel {ChannelId}", vendorId, channelId);
+                return StatusCode(500, new { message = "An error occurred while adding vendor to channel" });
+            }
+        }
+
+        /// <summary>
+        /// 🆕 NEW: Remove vendor from a channel
+        /// </summary>
+        [HttpDelete("{vendorId}/channels/{channelVendorId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> RemoveVendorFromChannel(Guid vendorId, Guid channelVendorId)
+        {
+            try
+            {
+                var vendor = await _context.Vendors.FindAsync(vendorId);
+                if (vendor == null)
+                    return NotFound(new { message = $"Vendor with ID {vendorId} not found" });
+
+                var success = await _channelService.RemoveVendorFromChannelAsync(channelVendorId);
+                if (!success)
+                    return NotFound(new { message = $"Channel vendor mapping with ID {channelVendorId} not found" });
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing vendor {VendorId} from channel", vendorId);
+                return StatusCode(500, new { message = "An error occurred while removing vendor from channel" });
             }
         }
 
