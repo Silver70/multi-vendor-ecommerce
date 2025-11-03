@@ -4,10 +4,10 @@ using Microsoft.EntityFrameworkCore;
 namespace EcommerceApi.Data
 {
     public static class DatabaseSeeder
+    
     {
-        // Existing user ID in the database
-        private static readonly Guid ExistingUserId = Guid.Parse("019a0cf2-ed9d-7b64-b6b5-8b70f3f2c9da");
-        private static readonly Guid TestCustomerId = Guid.Parse("019a0782-46b2-7003-9f92-f7cd06b6c4ee");
+        // Real user ID created via Clerk webhook
+        private static readonly Guid ExistingUserId = Guid.Parse("019a4857-544e-75b1-a155-502aece1b17a");
 
         public static async Task SeedDatabaseAsync(AppDbContext context)
         {
@@ -20,8 +20,8 @@ namespace EcommerceApi.Data
 
             Console.WriteLine("Starting async database seeding...");
 
-            // Seed Customer linked to existing user
-            await SeedTestCustomerAsync(context);
+            // Get or create customer for the real user (created via Clerk webhook)
+            var customerId = await GetOrCreateCustomerForUserAsync(context);
 
             // Seed Categories
             await SeedCategoriesAsync(context);
@@ -29,53 +29,153 @@ namespace EcommerceApi.Data
             // Seed Vendors
             await SeedVendorsAsync(context);
 
+            // 🆕 NEW: Seed Channels
+            await SeedChannelsAsync(context);
+
             // Seed Global Attributes
             await SeedGlobalAttributesAsync(context);
 
             // Seed Products with Variants (using new normalized structure)
             await SeedProductsAsync(context);
 
+            // 🆕 NEW: Seed Channel Products and Channel Vendors
+            await SeedChannelProductsAsync(context);
+            await SeedChannelVendorsAsync(context);
+
+            // 🆕 NEW: Seed Channel Tax Rules
+            await SeedChannelTaxRulesAsync(context);
+
             // Seed Addresses (now linked to Customer instead of User)
-            await SeedAddressesAsync(context);
+            await SeedAddressesAsync(context, customerId);
 
             // Seed Orders with Items and Payments (now linked to Customer)
-            await SeedOrdersAsync(context);
+            await SeedOrdersAsync(context, customerId);
 
             // Seed Reviews
-            await SeedReviewsAsync(context);
+            await SeedReviewsAsync(context, customerId);
 
             Console.WriteLine("Async database seeding completed successfully!");
         }
 
-        private static async Task SeedTestCustomerAsync(AppDbContext context)
+        /// <summary>
+        /// Get or create a customer for the existing user (created via Clerk webhook)
+        /// </summary>
+        private static async Task<Guid> GetOrCreateCustomerForUserAsync(AppDbContext context)
         {
-            Console.WriteLine("Seeding Test Customer...");
-
-            // Check if customer already exists
-            var customerExists = await context.Customers.AnyAsync(c => c.Id == TestCustomerId);
-            if (customerExists)
+            // Get the user details from the Users table
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == ExistingUserId);
+            if (user == null)
             {
-                Console.WriteLine($"Customer already exists. Skipping customer creation.");
-                return;
+                throw new InvalidOperationException($"User with ID {ExistingUserId} not found. Please register via Clerk first.");
             }
 
-            // Create test customer (created by admin)
-            var testCustomer = new Customer
+            // Check if a customer already exists for this user
+            var existingCustomer = await context.Customers
+                .FirstOrDefaultAsync(c => c.CreatedByUserId == ExistingUserId || c.Email == user.Email);
+
+            if (existingCustomer != null)
             {
-                Id = TestCustomerId,
-                CreatedByUserId = ExistingUserId,  // Optional: Link to admin who created it
-                FullName = "John Doe",
-                Email = "john.doe@example.com",
+                Console.WriteLine($"Customer already exists for user {ExistingUserId}");
+                return existingCustomer.Id;
+            }
+
+            // Create a customer linked to this user
+            var customerId = Guid.NewGuid();
+            var customer = new Customer
+            {
+                Id = customerId,
+                CreatedByUserId = ExistingUserId,
+                FullName = user.Name,
+                Email = user.Email,
                 Phone = "+1-555-0100",
                 DateOfBirth = new DateTime(1990, 5, 15, 0, 0, 0, DateTimeKind.Utc),
-                IsFromWebsite = false,
+                IsFromWebsite = true,
                 CreatedAt = DateTime.UtcNow
             };
 
-            context.Customers.Add(testCustomer);
+            context.Customers.Add(customer);
             await context.SaveChangesAsync();
 
-            Console.WriteLine($"Added test customer {TestCustomerId}.");
+            Console.WriteLine($"Created customer {customerId} for user {ExistingUserId}");
+            return customerId;
+        }
+
+        /// <summary>
+        /// 🆕 NEW: Seed Channels (sales contexts)
+        /// </summary>
+        private static async Task SeedChannelsAsync(AppDbContext context)
+        {
+            Console.WriteLine("Seeding Channels...");
+
+            var channels = new List<Channel>
+            {
+                new Channel
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Direct Web",
+                    Type = "web",
+                    Description = "Direct e-commerce website",
+                    IsActive = true,
+                    CountryCode = "US",
+                    CurrencyCode = "USD",
+                    IsB2B = false,
+                    DefaultTaxRate = 0.07m,
+                    TaxBehavior = "exclusive",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Channel
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Shopify",
+                    Type = "shopify",
+                    Description = "Shopify marketplace integration",
+                    IsActive = true,
+                    CountryCode = "CA",
+                    RegionCode = "ON",
+                    CurrencyCode = "CAD",
+                    IsB2B = false,
+                    DefaultTaxRate = 0.13m,
+                    TaxBehavior = "exclusive",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Channel
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Amazon EU",
+                    Type = "amazon",
+                    Description = "Amazon Europe marketplace",
+                    IsActive = true,
+                    CountryCode = "DE",
+                    CurrencyCode = "EUR",
+                    IsB2B = false,
+                    DefaultTaxRate = 0.19m,
+                    TaxBehavior = "inclusive",
+                    TaxIdentificationNumber = "DE123456789",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Channel
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "B2B Portal",
+                    Type = "b2b",
+                    Description = "Business-to-business sales channel",
+                    IsActive = true,
+                    CountryCode = "US",
+                    CurrencyCode = "USD",
+                    IsB2B = true,
+                    DefaultTaxRate = 0m,
+                    TaxBehavior = "exclusive",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+            };
+
+            context.Channels.AddRange(channels);
+            await context.SaveChangesAsync();
+            Console.WriteLine($"Added {channels.Count} channels.");
         }
 
         private static async Task SeedCategoriesAsync(AppDbContext context)
@@ -698,16 +798,283 @@ namespace EcommerceApi.Data
             Console.WriteLine($"Added {products.Count} products with {variants.Count} variants.");
         }
 
-        private static async Task SeedAddressesAsync(AppDbContext context)
+        /// <summary>
+        /// 🆕 NEW: Seed Channel Products (product availability per channel with pricing overrides)
+        /// </summary>
+        private static async Task SeedChannelProductsAsync(AppDbContext context)
+        {
+            Console.WriteLine("Seeding Channel Products...");
+
+            var channels = await context.Channels.ToListAsync();
+            var products = await context.Products.Include(p => p.Category).ToListAsync();
+
+            var channelProducts = new List<ChannelProduct>();
+
+            // Add all products to "Direct Web" channel with base pricing
+            var directWebChannel = channels.First(c => c.Name == "Direct Web");
+            foreach (var product in products)
+            {
+                channelProducts.Add(new ChannelProduct
+                {
+                    Id = Guid.NewGuid(),
+                    ChannelId = directWebChannel.Id,
+                    ProductId = product.Id,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+
+            // Add selected products to Shopify with CAD pricing (10% markup)
+            var shopifyChannel = channels.First(c => c.Name == "Shopify");
+            var electronicProducts = products.Where(p => p.Category.Name == "Electronics").Take(3).ToList();
+            foreach (var product in electronicProducts)
+            {
+                var variants = await context.ProductVariants.Where(v => v.ProductId == product.Id).ToListAsync();
+                var avgPrice = variants.Count > 0 ? variants.Average(v => v.Price) : product.BasePrice;
+
+                channelProducts.Add(new ChannelProduct
+                {
+                    Id = Guid.NewGuid(),
+                    ChannelId = shopifyChannel.Id,
+                    ProductId = product.Id,
+                    ChannelName = $"{product.Name} (Shopify CA)",
+                    ChannelPrice = Math.Round(avgPrice * 1.1m * 1.25m, 2), // 10% markup + CAD conversion (~1.25)
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+
+            // Add selected products to Amazon EU with EUR pricing (inclusive VAT)
+            var amazonChannel = channels.First(c => c.Name == "Amazon EU");
+            var fashionProducts = products.Where(p => p.Category.Name == "Clothing").Take(3).ToList();
+            foreach (var product in fashionProducts)
+            {
+                var variants = await context.ProductVariants.Where(v => v.ProductId == product.Id).ToListAsync();
+                var avgPrice = variants.Count > 0 ? variants.Average(v => v.Price) : product.BasePrice;
+
+                channelProducts.Add(new ChannelProduct
+                {
+                    Id = Guid.NewGuid(),
+                    ChannelId = amazonChannel.Id,
+                    ProductId = product.Id,
+                    ChannelName = $"{product.Name} (Amazon.de)",
+                    ChannelPrice = Math.Round(avgPrice * 0.9m * 0.85m, 2), // Slight discount for EU market
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+
+            context.ChannelProducts.AddRange(channelProducts);
+            await context.SaveChangesAsync();
+            Console.WriteLine($"Added {channelProducts.Count} channel products.");
+        }
+
+        /// <summary>
+        /// 🆕 NEW: Seed Channel Vendors (vendor availability per channel)
+        /// </summary>
+        private static async Task SeedChannelVendorsAsync(AppDbContext context)
+        {
+            Console.WriteLine("Seeding Channel Vendors...");
+
+            var channels = await context.Channels.ToListAsync();
+            var vendors = await context.Vendors.ToListAsync();
+
+            var channelVendors = new List<ChannelVendor>();
+
+            // All vendors are available on Direct Web
+            var directWebChannel = channels.First(c => c.Name == "Direct Web");
+            foreach (var vendor in vendors)
+            {
+                channelVendors.Add(new ChannelVendor
+                {
+                    Id = Guid.NewGuid(),
+                    ChannelId = directWebChannel.Id,
+                    VendorId = vendor.Id,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            // Tech and Fashion vendors on Shopify
+            var shopifyChannel = channels.First(c => c.Name == "Shopify");
+            var shopifyVendors = vendors.Where(v =>
+                v.Name.Contains("Tech") || v.Name.Contains("Fashion") || v.Name.Contains("HomeStyle")).ToList();
+            foreach (var vendor in shopifyVendors)
+            {
+                channelVendors.Add(new ChannelVendor
+                {
+                    Id = Guid.NewGuid(),
+                    ChannelId = shopifyChannel.Id,
+                    VendorId = vendor.Id,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            // Fashion and Beauty vendors on Amazon EU
+            var amazonChannel = channels.First(c => c.Name == "Amazon EU");
+            var amazonVendors = vendors.Where(v =>
+                v.Name.Contains("Fashion") || v.Name.Contains("Beauty") || v.Name.Contains("Wellness")).ToList();
+            foreach (var vendor in amazonVendors)
+            {
+                channelVendors.Add(new ChannelVendor
+                {
+                    Id = Guid.NewGuid(),
+                    ChannelId = amazonChannel.Id,
+                    VendorId = vendor.Id,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            // All vendors on B2B Portal
+            var b2bChannel = channels.First(c => c.Name == "B2B Portal");
+            foreach (var vendor in vendors)
+            {
+                channelVendors.Add(new ChannelVendor
+                {
+                    Id = Guid.NewGuid(),
+                    ChannelId = b2bChannel.Id,
+                    VendorId = vendor.Id,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            context.ChannelVendors.AddRange(channelVendors);
+            await context.SaveChangesAsync();
+            Console.WriteLine($"Added {channelVendors.Count} channel vendor mappings.");
+        }
+
+        /// <summary>
+        /// 🆕 NEW: Seed Channel Tax Rules
+        /// </summary>
+        private static async Task SeedChannelTaxRulesAsync(AppDbContext context)
+        {
+            Console.WriteLine("Seeding Channel Tax Rules...");
+
+            var channels = await context.Channels.ToListAsync();
+
+            var taxRules = new List<ChannelTaxRule>();
+
+            // Direct Web (US) - 7% Sales Tax
+            var directWebChannel = channels.First(c => c.Name == "Direct Web");
+            taxRules.Add(new ChannelTaxRule
+            {
+                Id = Guid.NewGuid(),
+                ChannelId = directWebChannel.Id,
+                Name = "US Sales Tax",
+                TaxRate = 0.07m,
+                ApplicableCountryCode = "US",
+                ApplyToB2B = false,
+                ApplyToB2C = true,
+                TaxBehavior = "exclusive",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            // B2B Exempt
+            taxRules.Add(new ChannelTaxRule
+            {
+                Id = Guid.NewGuid(),
+                ChannelId = directWebChannel.Id,
+                Name = "B2B Exempt",
+                TaxRate = 0m,
+                ApplyToB2B = true,
+                ApplyToB2C = false,
+                TaxBehavior = "exclusive",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            // Shopify (Canada) - 13% HST (Ontario)
+            var shopifyChannel = channels.First(c => c.Name == "Shopify");
+            taxRules.Add(new ChannelTaxRule
+            {
+                Id = Guid.NewGuid(),
+                ChannelId = shopifyChannel.Id,
+                Name = "Ontario HST",
+                TaxRate = 0.13m,
+                ApplicableCountryCode = "CA",
+                ApplicableRegionCode = "ON",
+                ApplyToB2B = false,
+                ApplyToB2C = true,
+                TaxBehavior = "exclusive",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            // Amazon EU (Germany) - 19% VAT
+            var amazonChannel = channels.First(c => c.Name == "Amazon EU");
+            taxRules.Add(new ChannelTaxRule
+            {
+                Id = Guid.NewGuid(),
+                ChannelId = amazonChannel.Id,
+                Name = "Germany VAT",
+                TaxRate = 0.19m,
+                ApplicableCountryCode = "DE",
+                ApplyToB2B = false,
+                ApplyToB2C = true,
+                TaxBehavior = "inclusive",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            // Reduced VAT for food items
+            taxRules.Add(new ChannelTaxRule
+            {
+                Id = Guid.NewGuid(),
+                ChannelId = amazonChannel.Id,
+                Name = "Germany VAT - Reduced",
+                Description = "Applied to food and essential items",
+                TaxRate = 0.07m,
+                ApplicableCountryCode = "DE",
+                ApplyToB2B = false,
+                ApplyToB2C = true,
+                TaxBehavior = "inclusive",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            // B2B Portal - No Tax
+            var b2bChannel = channels.First(c => c.Name == "B2B Portal");
+            taxRules.Add(new ChannelTaxRule
+            {
+                Id = Guid.NewGuid(),
+                ChannelId = b2bChannel.Id,
+                Name = "B2B No Tax",
+                TaxRate = 0m,
+                ApplyToB2B = true,
+                ApplyToB2C = false,
+                TaxBehavior = "exclusive",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            context.ChannelTaxRules.AddRange(taxRules);
+            await context.SaveChangesAsync();
+            Console.WriteLine($"Added {taxRules.Count} tax rules.");
+        }
+
+        private static async Task SeedAddressesAsync(AppDbContext context, Guid customerId)
         {
             Console.WriteLine("Seeding Addresses...");
 
             var addresses = new List<Address>
             {
-                new Address
+                new()
                 {
                     Id = Guid.NewGuid(),
-                    CustomerId = TestCustomerId,
+                    CustomerId = customerId,
                     FullName = "John Doe",
                     Line1 = "123 Main Street",
                     Line2 = "Apt 4B",
@@ -716,10 +1083,10 @@ namespace EcommerceApi.Data
                     Country = "United States",
                     Phone = "+1-555-0123"
                 },
-                new Address
+                new()
                 {
                     Id = Guid.NewGuid(),
-                    CustomerId = TestCustomerId,
+                    CustomerId = customerId,
                     FullName = "John Doe",
                     Line1 = "456 Oak Avenue",
                     City = "Los Angeles",
@@ -727,10 +1094,10 @@ namespace EcommerceApi.Data
                     Country = "United States",
                     Phone = "+1-555-0124"
                 },
-                new Address
+                new()
                 {
                     Id = Guid.NewGuid(),
-                    CustomerId = TestCustomerId,
+                    CustomerId = customerId,
                     FullName = "Jane Doe",
                     Line1 = "789 Pine Road",
                     Line2 = "Suite 200",
@@ -746,7 +1113,7 @@ namespace EcommerceApi.Data
             Console.WriteLine($"Added {addresses.Count} addresses.");
         }
 
-        private static async Task SeedOrdersAsync(AppDbContext context)
+        private static async Task SeedOrdersAsync(AppDbContext context, Guid customerId)
         {
             Console.WriteLine("Seeding Orders with Items and Payments...");
 
@@ -761,7 +1128,7 @@ namespace EcommerceApi.Data
             var order1 = new Order
             {
                 Id = Guid.NewGuid(),
-                CustomerId = TestCustomerId,
+                CustomerId = customerId,
                 AddressId = addresses[0].Id,
                 Status = "delivered",
                 TotalAmount = 0,
@@ -792,7 +1159,7 @@ namespace EcommerceApi.Data
             var order2 = new Order
             {
                 Id = Guid.NewGuid(),
-                CustomerId = TestCustomerId,
+                CustomerId = customerId,
                 AddressId = addresses[1].Id,
                 Status = "shipped",
                 TotalAmount = 0,
@@ -823,7 +1190,7 @@ namespace EcommerceApi.Data
             var order3 = new Order
             {
                 Id = Guid.NewGuid(),
-                CustomerId = TestCustomerId,
+                CustomerId = customerId,
                 AddressId = addresses[2].Id,
                 Status = "paid",
                 TotalAmount = 0,
@@ -858,7 +1225,7 @@ namespace EcommerceApi.Data
             Console.WriteLine($"Added {orders.Count} orders with {orderItems.Count} order items and {payments.Count} payments.");
         }
 
-        private static async Task SeedReviewsAsync(AppDbContext context)
+        private static async Task SeedReviewsAsync(AppDbContext context, Guid customerId)
         {
             Console.WriteLine("Seeding Reviews...");
 

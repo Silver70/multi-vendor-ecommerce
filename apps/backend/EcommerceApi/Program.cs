@@ -65,6 +65,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<SlugGenerator>();
 builder.Services.AddScoped<VariantGenerationService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<IChannelService, ChannelService>();  // 🆕 NEW: Channel service
 
 // Configure AWS S3
 var awsConfig = builder.Configuration.GetSection("AWS");

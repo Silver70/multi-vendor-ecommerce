@@ -16,6 +16,9 @@ namespace EcommerceApi.Models
 
         public bool IsActive { get; set; } = true;
 
+        // 🆕 NEW: Base price (channel-specific prices override this)
+        public decimal BasePrice { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         // 🆕 SEO-friendly identifier
@@ -23,9 +26,10 @@ namespace EcommerceApi.Models
         public string Slug { get; set; } = string.Empty;
         // Navigation
         public Vendor? Vendor { get; set; }
-         public Category? Category { get; set; }
+        public Category? Category { get; set; }
         public ICollection<ProductVariant>? Variants { get; set; }
         public ICollection<ProductImage>? Images { get; set; }
         public ICollection<Review>? Reviews { get; set; }
+        public ICollection<ChannelProduct>? ChannelProducts { get; set; }  // 🆕 NEW
     }
 }

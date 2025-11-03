@@ -26,6 +26,12 @@ namespace EcommerceApi.Data
         public DbSet<VariantAttributeValue> VariantAttributeValues => Set<VariantAttributeValue>();
         public DbSet<Customer> Customers => Set<Customer>();
 
+        // 🆕 NEW: Channel entities
+        public DbSet<Channel> Channels => Set<Channel>();
+        public DbSet<ChannelVendor> ChannelVendors => Set<ChannelVendor>();
+        public DbSet<ChannelProduct> ChannelProducts => Set<ChannelProduct>();
+        public DbSet<ChannelTaxRule> ChannelTaxRules => Set<ChannelTaxRule>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -85,6 +91,65 @@ namespace EcommerceApi.Data
                 .WithOne(pi => pi.Variant)
                 .HasForeignKey(pi => pi.VariantId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // 🆕 NEW: Channel -> Order (one-to-many)
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Channel)
+                .WithMany(c => c.Orders)
+                .HasForeignKey(o => o.ChannelId)
+                .OnDelete(DeleteBehavior.Restrict);  // Don't delete orders if channel is deleted
+
+            // 🆕 NEW: ChannelVendor (many-to-many with payload)
+            modelBuilder.Entity<ChannelVendor>()
+                .HasOne(cv => cv.Channel)
+                .WithMany(c => c.ChannelVendors)
+                .HasForeignKey(cv => cv.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ChannelVendor>()
+                .HasOne(cv => cv.Vendor)
+                .WithMany(v => v.ChannelVendors)
+                .HasForeignKey(cv => cv.VendorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Unique constraint: One vendor per channel
+            modelBuilder.Entity<ChannelVendor>()
+                .HasIndex(cv => new { cv.ChannelId, cv.VendorId })
+                .IsUnique();
+
+            // 🆕 NEW: ChannelProduct (many-to-many with payload)
+            modelBuilder.Entity<ChannelProduct>()
+                .HasOne(cp => cp.Channel)
+                .WithMany(c => c.ChannelProducts)
+                .HasForeignKey(cp => cp.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ChannelProduct>()
+                .HasOne(cp => cp.Product)
+                .WithMany(p => p.ChannelProducts)
+                .HasForeignKey(cp => cp.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // 🆕 NEW: OrderItem -> Channel
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.Channel)
+                .WithMany()
+                .HasForeignKey(oi => oi.ChannelId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // 🆕 NEW: ChannelTaxRule -> Channel
+            modelBuilder.Entity<ChannelTaxRule>()
+                .HasOne(tr => tr.Channel)
+                .WithMany(c => c.TaxRules)
+                .HasForeignKey(tr => tr.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // 🆕 NEW: ChannelTaxRule -> Category (optional)
+            modelBuilder.Entity<ChannelTaxRule>()
+                .HasOne(tr => tr.Category)
+                .WithMany()
+                .HasForeignKey(tr => tr.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }
