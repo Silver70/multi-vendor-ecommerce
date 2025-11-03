@@ -39,27 +39,20 @@ yarn-error.log*
 
 
 # Backend
-# Build
-bin/
-obj/
+# Ignore all build output from .NET projects
+**/bin/
+**/obj/
 
-# User-specific files
+# Ignore local databases (SQLite, etc.)
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Ignore IDE/workspace settings
 .vs/
-*.user
-*.suo
+**/.vs/
 
-# Local databases
-*.db
-*.db-shm
-*.db-wal
+# Ignore user-specific launch files
+**/launchSettings.json
 
-# Logs
-*.log
-
-# Environment-specific
-appsettings.Development.json
-.env
-
-# Others
-launchSettings.json
 

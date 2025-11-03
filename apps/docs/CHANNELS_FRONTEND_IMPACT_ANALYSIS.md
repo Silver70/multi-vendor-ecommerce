@@ -1378,42 +1378,12 @@ export const CHANNEL_TYPES = [
 - [ ] Lazy load country/region dropdowns
 - [ ] Memoize currency conversion results
 
----
-
-## 17. Documentation & Help
-
-### 17.1 User Documentation
-
-- [ ] How to select a channel
-- [ ] What does "tax included" vs "tax added" mean?
-- [ ] Why is the price showing differently per channel?
-- [ ] How are taxes calculated?
-- [ ] Why did the tax change?
-
-### 17.2 Admin Documentation
-
-- [ ] Channel configuration guide
-- [ ] Tax rule setup guide
-- [ ] Regional/tax compliance checklist
-- [ ] Currency handling guide
-- [ ] Analytics by channel guide
-
-### 17.3 Code Documentation
-
-- [ ] ChannelProvider setup guide
-- [ ] useChannel hook usage examples
-- [ ] Tax calculation algorithm explanation
-- [ ] API integration examples
-- [ ] Custom component prop documentation
-
----
-
 ## 18. Implementation Priority & Checklist
 
 ### Phase 1: Core Infrastructure (Week 1)
 
 - [ ] Set up ChannelProvider and context
-- [ ] Create Redux/state slices
+- [ ] Create Zustand store
 - [ ] Set up API hooks for channels and tax
 - [ ] Create Channel and Currency utility functions
 - [ ] Create ChannelBadge and CurrencyDisplay components
@@ -1432,14 +1402,6 @@ export const CHANNEL_TYPES = [
 - [ ] Update product detail page with channel variants
 - [ ] Add channel availability indicators
 - [ ] Update product filters to support channels
-
-### Phase 4: Cart & Checkout (Week 2-3)
-
-- [ ] Update cart to track channel context
-- [ ] Add tax breakdown to cart summary
-- [ ] Create multi-step checkout with tax calculation
-- [ ] Add address-based tax recalculation
-- [ ] Create order confirmation with tax details
 
 ### Phase 5: Admin Interfaces (Week 3-4)
 
